@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quadratic Catapult Quest 🎯</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app">
+        <!-- Loading Screen -->
+        <div id="loading-screen" class="screen active">
+            <div class="loader">
+                <div class="parabola-loader"></div>
+                <h2>Loading Quadratic Quest...</h2>
+            </div>
+        </div>
+
+        <!-- Main Menu -->
+        <div id="main-menu" class="screen">
+            <div class="menu-container">
+                <h1 class="game-title">
+                    <span class="title-icon">📐</span>
+                    Quadratic Catapult Quest
+                    <span class="title-icon">🎯</span>
+                </h1>
+                <p class="subtitle">Master Quadratic Curves Through Play!</p>
+                
+                <div class="menu-buttons">
+                    <button class="btn btn-primary" id="btn-play">
+                        <span class="btn-icon">🚀</span> Start Game
+                    </button>
+                    <button class="btn btn-secondary" id="btn-practice">
+                        <span class="btn-icon">📚</span> Practice Mode
+                    </button>
+                    <button class="btn btn-secondary" id="btn-tutorial">
+                        <span class="btn-icon">❓</span> How to Play
+                    </button>
+                    <button class="btn btn-secondary" id="btn-settings">
+                        <span class="btn-icon">⚙️</span> Settings
+                    </button>
+                </div>
+
+                <div class="difficulty-selector" id="difficulty-selector">
+                    <h3>Select Your Level</h3>
+                    <div class="difficulty-options">
+                        <button class="difficulty-btn" data-level="beginner">
+                            <span class="diff-icon">🌱</span>
+                            <span class="diff-name">Beginner</span>
+                            <span class="diff-desc">Sec 1-2</span>
+                        </button>
+                        <button class="difficulty-btn" data-level="intermediate">
+                            <span class="diff-icon">🌿</span>
+                            <span class="diff-name">Intermediate</span>
+                            <span class="diff-desc">Sec 3</span>
+                        </button>
+                        <button class="difficulty-btn" data-level="advanced">
+                            <span class="diff-icon">🌳</span>
+                            <span class="diff-name">Advanced</span>
+                            <span class="diff-desc">O-Level 4052</span>
+                        </button>
+                        <button class="difficulty-btn" data-level="expert">
+                            <span class="diff-icon">🏆</span>
+                            <span class="diff-name">Expert</span>
+                            <span class="diff-desc">Challenge Mode</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tutorial Screen -->
+        <div id="tutorial-screen" class="screen">
+            <div class="tutorial-container">
+                <h2>How to Play</h2>
+                <div class="tutorial-content">
+                    <div class="tutorial-step" id="tutorial-step-1">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h3>Read the Question</h3>
+                            <p>You'll see a quadratic equation and a question about its properties.</p>
+                            <div class="example-box">
+                                <p>Example: y = x² - 4x + 3</p>
+                                <p>Find the line of symmetry.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tutorial-step" id="tutorial-step-2">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h3>Input Your Answer</h3>
+                            <p>Type your answer in the input field. Use proper notation!</p>
+                            <div class="example-box">
+                                <p>Line of symmetry: x = 2</p>
+                                <p>Turning point: (2, -1)</p>
+                                <p>X-intercepts: x = 1, 3</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tutorial-step" id="tutorial-step-3">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h3>Launch & Score!</h3>
+                            <p>Correct answer = Perfect trajectory to hit the target!</p>
+                            <p>Wrong answer = Projectile misses. Learn and try again!</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="tutorial-nav">
+                    <button class="btn btn-secondary" id="btn-tutorial-back">Back to Menu</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="screen">
+            <!-- Game Header -->
+            <div class="game-header">
+                <div class="header-left">
+                    <button class="btn-icon-only" id="btn-pause">⏸️</button>
+                    <div class="level-info">
+                        <span class="level-badge" id="level-badge">Level 1</span>
+                        <span class="level-name" id="level-name">Beginner</span>
+                    </div>
+                </div>
+                <div class="header-center">
+                    <div class="score-display">
+                        <span class="score-label">Score</span>
+                        <span class="score-value" id="score-value">0</span>
+                    </div>
+                    <div class="streak-display">
+                        <span class="streak-icon">🔥</span>
+                        <span class="streak-value" id="streak-value">0</span>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="timer-display" id="timer-display">
+                        <span class="timer-icon">⏱️</span>
+                        <span class="timer-value" id="timer-value">60</span>
+                    </div>
+                    <div class="lives-display" id="lives-display">
+                        <span id="lives-icons">❤️❤️❤️</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Game Area -->
+            <div class="game-main">
+                <!-- Canvas Container -->
+                <div class="canvas-container">
+                    <canvas id="game-canvas"></canvas>
+                    <div class="canvas-overlay" id="canvas-overlay">
+                        <div class="hit-feedback" id="hit-feedback">
+                            <span class="hit-text">🎯 Perfect Hit!</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Question Panel -->
+                <div class="question-panel">
+                    <div class="equation-display">
+                        <h3>Quadratic Equation</h3>
+                        <div class="equation-box" id="equation-box">
+                            y = x² - 4x + 3
+                        </div>
+                        <div class="equation-forms" id="equation-forms">
+                            <!-- Additional forms shown for advanced levels -->
+                        </div>
+                    </div>
+
+                    <div class="question-display">
+                        <h3>Mission</h3>
+                        <div class="question-box" id="question-box">
+                            <p class="question-text" id="question-text">
+                                Find the line of symmetry
+                            </p>
+                            <div class="question-hint" id="question-hint">
+                                <button class="btn-hint" id="btn-hint">💡 Hint</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="answer-section">
+                        <div class="answer-input-group">
+                            <label for="answer-input" id="answer-label">Your Answer:</label>
+                            <div class="input-wrapper">
+                                <input type="text" id="answer-input" 
+                                       placeholder="e.g., x = 2" 
+                                       autocomplete="off">
+                                <div class="input-suggestions" id="input-suggestions">
+                                    <!-- Dynamic suggestions -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Special input for coordinates -->
+                        <div class="coordinate-input" id="coordinate-input" style="display: none;">
+                            <div class="coord-group">
+                                <label>x:</label>
+                                <input type="number" id="coord-x" step="0.5">
+                            </div>
+                            <div class="coord-group">
+                                <label>y:</label>
+                                <input type="number" id="coord-y" step="0.5">
+                            </div>
+                        </div>
+
+                        <!-- Multiple choice for some questions -->
+                        <div class="multiple-choice" id="multiple-choice" style="display: none;">
+                            <button class="choice-btn" data-choice="A"></button>
+                            <button class="choice-btn" data-choice="B"></button>
+                            <button class="choice-btn" data-choice="C"></button>
+                            <button class="choice-btn" data-choice="D"></button>
+                        </div>
+
+                        <div class="action-buttons">
+                            <button class="btn btn-launch" id="btn-launch">
+                                <span class="btn-icon">🚀</span> Launch!
+                            </button>
+                            <button class="btn btn-skip" id="btn-skip">
+                                Skip (-50pts)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Feedback Area -->
+                    <div class="feedback-area" id="feedback-area">
+                        <div class="feedback-content">
+                            <span class="feedback-icon" id="feedback-icon">✓</span>
+                            <span class="feedback-text" id="feedback-text">Correct!</span>
+                        </div>
+                        <div class="feedback-explanation" id="feedback-explanation">
+                            <!-- Detailed explanation -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Graph Tools (for advanced levels) -->
+            <div class="graph-tools" id="graph-tools">
+                <h4>Graph Tools</h4>
+                <div class="tool-buttons">
+                    <button class="tool-btn active" data-tool="select" title="Select">
+                        <span>👆</span>
+                    </button>
+                    <button class="tool-btn" data-tool="point" title="Plot Point">
+                        <span>📍</span>
+                    </button>
+                    <button class="tool-btn" data-tool="line" title="Draw Line">
+                        <span>📏</span>
+                    </button>
+                    <button class="tool-btn" data-tool="clear" title="Clear">
+                        <span>🗑️</span>
+                    </button>
+                </div>
+                <div class="line-input" id="line-input" style="display: none;">
+                    <label>Line equation:</label>
+                    <input type="text" id="line-equation" placeholder="y = mx + c">
+                    <button class="btn-small" id="btn-draw-line">Draw</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pause Menu -->
+        <div id="pause-menu" class="modal">
+            <div class="modal-content">
+                <h2>Game Paused</h2>
+                <div class="pause-stats">
+                    <p>Score: <span id="pause-score">0</span></p>
+                    <p>Level: <span id="pause-level">1</span></p>
+                </div>
+                <div class="modal-buttons">
+                    <button class="btn btn-primary" id="btn-resume">Resume</button>
+                    <button class="btn btn-secondary" id="btn-restart">Restart</button>
+                    <button class="btn btn-secondary" id="btn-quit">Quit to Menu</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Screen -->
+        <div id="results-screen" class="screen">
+            <div class="results-container">
+                <h2 id="results-title">Level Complete!</h2>
+                <div class="results-stars" id="results-stars">
+                    ⭐⭐⭐
+                </div>
+                <div class="results-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Final Score</span>
+                        <span class="stat-value" id="final-score">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Questions</span>
+                        <span class="stat-value" id="questions-answered">0/0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Accuracy</span>
+                        <span class="stat-value" id="accuracy">0%</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Best Streak</span>
+                        <span class="stat-value" id="best-streak">0</span>
+                    </div>
+                </div>
+                <div class="results-breakdown">
+                    <h3>Performance by Topic</h3>
+                    <div class="topic-bars" id="topic-bars">
+                        <!-- Dynamic topic performance bars -->
+                    </div>
+                </div>
+                <div class="results-buttons">
+                    <button class="btn btn-primary" id="btn-next-level">Next Level</button>
+                    <button class="btn btn-secondary" id="btn-retry">Try Again</button>
+                    <button class="btn btn-secondary" id="btn-menu">Main Menu</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Modal -->
+        <div id="settings-modal" class="modal">
+            <div class="modal-content">
+                <h2>Settings</h2>
+                <div class="settings-group">
+                    <label>Sound Effects</label>
+                    <input type="checkbox" id="setting-sound" checked>
+                </div>
+                <div class="settings-group">
+                    <label>Music</label>
+                    <input type="checkbox" id="setting-music" checked>
+                </div>
+                <div class="settings-group">
+                    <label>Show Hints</label>
+                    <input type="checkbox" id="setting-hints" checked>
+                </div>
+                <div class="settings-group">
+                    <label>Timer Mode</label>
+                    <select id="setting-timer">
+                        <option value="60">60 seconds</option>
+                        <option value="90">90 seconds</option>
+                        <option value="120">120 seconds</option>
+                        <option value="0">No timer</option>
+                    </select>
+                </div>
+                <div class="settings-group">
+                    <label>Grid Style</label>
+                    <select id="setting-grid">
+                        <option value="standard">Standard</option>
+                        <option value="detailed">Detailed</option>
+                        <option value="minimal">Minimal</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" id="btn-save-settings">Save</button>
+                <button class="btn btn-secondary" id="btn-close-settings">Close</button>
+            </div>
+        </div>
+
+        <!-- Hint Modal -->
+        <div id="hint-modal" class="modal">
+            <div class="modal-content hint-content">
+                <h3>💡 Hint</h3>
+                <div class="hint-text" id="hint-text">
+                    <!-- Dynamic hint content -->
+                </div>
+                <div class="hint-formula" id="hint-formula">
+                    <!-- Formula reminder -->
+                </div>
+                <button class="btn btn-secondary" id="btn-close-hint">Got it!</button>
+            </div>
+        </div>
+
+        <!-- Formula Reference (slide-out panel) -->
+        <div id="formula-panel" class="slide-panel">
+            <button class="panel-toggle" id="formula-toggle">📋</button>
+            <div class="panel-content">
+                <h3>Formula Reference</h3>
+                <div class="formula-section">
+                    <h4>Standard Form</h4>
+                    <p>y = ax² + bx + c</p>
+                </div>
+                <div class="formula-section">
+                    <h4>Line of Symmetry</h4>
+                    <p>x = -b/(2a)</p>
+                </div>
+                <div class="formula-section">
+                    <h4>Turning Point</h4>
+                    <p>(-b/(2a), f(-b/(2a)))</p>
+                </div>
+                <div class="formula-section">
+                    <h4>Quadratic Formula</h4>
+                    <p>x = (-b ± √(b²-4ac))/(2a)</p>
+                </div>
+                <div class="formula-section">
+                    <h4>Discriminant</h4>
+                    <p>D = b² - 4ac</p>
+                    <ul>
+                        <li>D > 0: Two real roots</li>
+                        <li>D = 0: One repeated root</li>
+                        <li>D < 0: No real roots</li>
+                    </ul>
+                </div>
+                <div class="formula-section">
+                    <h4>Completing the Square</h4>
+                    <p>y = a(x - h)² + k</p>
+                    <p>Vertex: (h, k)</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/quadratic.js"></script>
+    <script src="js/canvas.js"></script>
+    <script src="js/questions.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
