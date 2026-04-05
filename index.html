@@ -6,11 +6,104 @@
     <title>Quadratic Catapult Quest 🎯</title>
     <link rel="stylesheet" href="css/styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    
+    <!-- Critical inline styles to ensure initial visibility -->
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        #app {
+            width: 100%;
+            min-height: 100vh;
+        }
+        
+        .screen {
+            display: none;
+            width: 100%;
+            min-height: 100vh;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .screen.active {
+            display: flex !important;
+        }
+        
+        /* Loading screen always visible initially */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #1a1a2e;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #loading-screen.hidden {
+            display: none !important;
+        }
+        
+        .loader {
+            text-align: center;
+        }
+        
+        .loader h2 {
+            color: #b8b8d1;
+            margin-top: 20px;
+        }
+        
+        .parabola-loader {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto;
+            border: 4px solid rgba(108, 99, 255, 0.3);
+            border-top-color: #6C63FF;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Ensure canvas container has dimensions */
+        .canvas-container {
+            width: 100%;
+            min-height: 400px;
+            height: 60vh;
+            background: #0a0a1a;
+            border-radius: 12px;
+            position: relative;
+        }
+        
+        #game-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+    </style>
 </head>
 <body>
     <div id="app">
         <!-- Loading Screen -->
-        <div id="loading-screen" class="screen active">
+        <div id="loading-screen">
             <div class="loader">
                 <div class="parabola-loader"></div>
                 <h2>Loading Quadratic Quest...</h2>
@@ -73,9 +166,9 @@
         <!-- Tutorial Screen -->
         <div id="tutorial-screen" class="screen">
             <div class="tutorial-container">
-                <h2>How to Play</h2>
+                <h2>📖 How to Play</h2>
                 <div class="tutorial-content">
-                    <div class="tutorial-step" id="tutorial-step-1">
+                    <div class="tutorial-step">
                         <div class="step-number">1</div>
                         <div class="step-content">
                             <h3>Read the Question</h3>
@@ -86,7 +179,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="tutorial-step" id="tutorial-step-2">
+                    <div class="tutorial-step">
                         <div class="step-number">2</div>
                         <div class="step-content">
                             <h3>Input Your Answer</h3>
@@ -98,17 +191,17 @@
                             </div>
                         </div>
                     </div>
-                    <div class="tutorial-step" id="tutorial-step-3">
+                    <div class="tutorial-step">
                         <div class="step-number">3</div>
                         <div class="step-content">
                             <h3>Launch & Score!</h3>
-                            <p>Correct answer = Perfect trajectory to hit the target!</p>
+                            <p>Correct answer = Perfect trajectory to hit the target! 🎯</p>
                             <p>Wrong answer = Projectile misses. Learn and try again!</p>
                         </div>
                     </div>
                 </div>
                 <div class="tutorial-nav">
-                    <button class="btn btn-secondary" id="btn-tutorial-back">Back to Menu</button>
+                    <button class="btn btn-primary" id="btn-tutorial-back">Back to Menu</button>
                 </div>
             </div>
         </div>
@@ -118,7 +211,7 @@
             <!-- Game Header -->
             <div class="game-header">
                 <div class="header-left">
-                    <button class="btn-icon-only" id="btn-pause">⏸️</button>
+                    <button class="btn-icon-only" id="btn-pause" title="Pause">⏸️</button>
                     <div class="level-info">
                         <span class="level-badge" id="level-badge">Level 1</span>
                         <span class="level-name" id="level-name">Beginner</span>
@@ -148,7 +241,7 @@
             <!-- Main Game Area -->
             <div class="game-main">
                 <!-- Canvas Container -->
-                <div class="canvas-container">
+                <div class="canvas-container" id="canvas-container">
                     <canvas id="game-canvas"></canvas>
                     <div class="canvas-overlay" id="canvas-overlay">
                         <div class="hit-feedback" id="hit-feedback">
@@ -158,19 +251,17 @@
                 </div>
 
                 <!-- Question Panel -->
-                <div class="question-panel">
+                <div class="question-panel" id="question-panel">
                     <div class="equation-display">
-                        <h3>Quadratic Equation</h3>
+                        <h3>📐 Quadratic Equation</h3>
                         <div class="equation-box" id="equation-box">
                             y = x² - 4x + 3
                         </div>
-                        <div class="equation-forms" id="equation-forms">
-                            <!-- Additional forms shown for advanced levels -->
-                        </div>
+                        <div class="equation-forms" id="equation-forms"></div>
                     </div>
 
                     <div class="question-display">
-                        <h3>Mission</h3>
+                        <h3>🎯 Mission</h3>
                         <div class="question-box" id="question-box">
                             <p class="question-text" id="question-text">
                                 Find the line of symmetry
@@ -187,31 +278,30 @@
                             <div class="input-wrapper">
                                 <input type="text" id="answer-input" 
                                        placeholder="e.g., x = 2" 
-                                       autocomplete="off">
-                                <div class="input-suggestions" id="input-suggestions">
-                                    <!-- Dynamic suggestions -->
-                                </div>
+                                       autocomplete="off"
+                                       spellcheck="false">
+                                <div class="input-suggestions" id="input-suggestions"></div>
                             </div>
                         </div>
                         
-                        <!-- Special input for coordinates -->
+                        <!-- Coordinate input for point answers -->
                         <div class="coordinate-input" id="coordinate-input" style="display: none;">
                             <div class="coord-group">
                                 <label>x:</label>
-                                <input type="number" id="coord-x" step="0.5">
+                                <input type="number" id="coord-x" step="0.5" placeholder="0">
                             </div>
                             <div class="coord-group">
                                 <label>y:</label>
-                                <input type="number" id="coord-y" step="0.5">
+                                <input type="number" id="coord-y" step="0.5" placeholder="0">
                             </div>
                         </div>
 
-                        <!-- Multiple choice for some questions -->
+                        <!-- Multiple choice options -->
                         <div class="multiple-choice" id="multiple-choice" style="display: none;">
-                            <button class="choice-btn" data-choice="A"></button>
-                            <button class="choice-btn" data-choice="B"></button>
-                            <button class="choice-btn" data-choice="C"></button>
-                            <button class="choice-btn" data-choice="D"></button>
+                            <button class="choice-btn" data-choice="A">Option A</button>
+                            <button class="choice-btn" data-choice="B">Option B</button>
+                            <button class="choice-btn" data-choice="C">Option C</button>
+                            <button class="choice-btn" data-choice="D">Option D</button>
                         </div>
 
                         <div class="action-buttons">
@@ -230,33 +320,23 @@
                             <span class="feedback-icon" id="feedback-icon">✓</span>
                             <span class="feedback-text" id="feedback-text">Correct!</span>
                         </div>
-                        <div class="feedback-explanation" id="feedback-explanation">
-                            <!-- Detailed explanation -->
-                        </div>
+                        <div class="feedback-explanation" id="feedback-explanation"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- Graph Tools (for advanced levels) -->
+            <!-- Graph Tools -->
             <div class="graph-tools" id="graph-tools">
-                <h4>Graph Tools</h4>
+                <h4>Tools</h4>
                 <div class="tool-buttons">
-                    <button class="tool-btn active" data-tool="select" title="Select">
-                        <span>👆</span>
-                    </button>
-                    <button class="tool-btn" data-tool="point" title="Plot Point">
-                        <span>📍</span>
-                    </button>
-                    <button class="tool-btn" data-tool="line" title="Draw Line">
-                        <span>📏</span>
-                    </button>
-                    <button class="tool-btn" data-tool="clear" title="Clear">
-                        <span>🗑️</span>
-                    </button>
+                    <button class="tool-btn active" data-tool="select" title="Select">👆</button>
+                    <button class="tool-btn" data-tool="point" title="Plot Point">📍</button>
+                    <button class="tool-btn" data-tool="line" title="Draw Line">📏</button>
+                    <button class="tool-btn" data-tool="clear" title="Clear">🗑️</button>
                 </div>
                 <div class="line-input" id="line-input" style="display: none;">
                     <label>Line equation:</label>
-                    <input type="text" id="line-equation" placeholder="y = mx + c">
+                    <input type="text" id="line-equation" placeholder="y = 2x + 1">
                     <button class="btn-small" id="btn-draw-line">Draw</button>
                 </div>
             </div>
@@ -265,15 +345,15 @@
         <!-- Pause Menu -->
         <div id="pause-menu" class="modal">
             <div class="modal-content">
-                <h2>Game Paused</h2>
+                <h2>⏸️ Game Paused</h2>
                 <div class="pause-stats">
                     <p>Score: <span id="pause-score">0</span></p>
-                    <p>Level: <span id="pause-level">1</span></p>
+                    <p>Progress: <span id="pause-level">1/10</span></p>
                 </div>
                 <div class="modal-buttons">
-                    <button class="btn btn-primary" id="btn-resume">Resume</button>
-                    <button class="btn btn-secondary" id="btn-restart">Restart</button>
-                    <button class="btn btn-secondary" id="btn-quit">Quit to Menu</button>
+                    <button class="btn btn-primary" id="btn-resume">▶️ Resume</button>
+                    <button class="btn btn-secondary" id="btn-restart">🔄 Restart</button>
+                    <button class="btn btn-secondary" id="btn-quit">🏠 Quit to Menu</button>
                 </div>
             </div>
         </div>
@@ -281,10 +361,8 @@
         <!-- Results Screen -->
         <div id="results-screen" class="screen">
             <div class="results-container">
-                <h2 id="results-title">Level Complete!</h2>
-                <div class="results-stars" id="results-stars">
-                    ⭐⭐⭐
-                </div>
+                <h2 id="results-title">🎉 Level Complete!</h2>
+                <div class="results-stars" id="results-stars">⭐⭐⭐</div>
                 <div class="results-stats">
                     <div class="stat-item">
                         <span class="stat-label">Final Score</span>
@@ -303,16 +381,14 @@
                         <span class="stat-value" id="best-streak">0</span>
                     </div>
                 </div>
-                <div class="results-breakdown">
-                    <h3>Performance by Topic</h3>
-                    <div class="topic-bars" id="topic-bars">
-                        <!-- Dynamic topic performance bars -->
-                    </div>
+                <div class="results-breakdown" id="results-breakdown">
+                    <h3>📊 Performance by Topic</h3>
+                    <div class="topic-bars" id="topic-bars"></div>
                 </div>
                 <div class="results-buttons">
-                    <button class="btn btn-primary" id="btn-next-level">Next Level</button>
-                    <button class="btn btn-secondary" id="btn-retry">Try Again</button>
-                    <button class="btn btn-secondary" id="btn-menu">Main Menu</button>
+                    <button class="btn btn-primary" id="btn-next-level">Next Level ➡️</button>
+                    <button class="btn btn-secondary" id="btn-retry">🔄 Try Again</button>
+                    <button class="btn btn-secondary" id="btn-menu">🏠 Main Menu</button>
                 </div>
             </div>
         </div>
@@ -320,21 +396,21 @@
         <!-- Settings Modal -->
         <div id="settings-modal" class="modal">
             <div class="modal-content">
-                <h2>Settings</h2>
+                <h2>⚙️ Settings</h2>
                 <div class="settings-group">
-                    <label>Sound Effects</label>
+                    <label>🔊 Sound Effects</label>
                     <input type="checkbox" id="setting-sound" checked>
                 </div>
                 <div class="settings-group">
-                    <label>Music</label>
+                    <label>🎵 Music</label>
                     <input type="checkbox" id="setting-music" checked>
                 </div>
                 <div class="settings-group">
-                    <label>Show Hints</label>
+                    <label>💡 Show Hints</label>
                     <input type="checkbox" id="setting-hints" checked>
                 </div>
                 <div class="settings-group">
-                    <label>Timer Mode</label>
+                    <label>⏱️ Timer Mode</label>
                     <select id="setting-timer">
                         <option value="60">60 seconds</option>
                         <option value="90">90 seconds</option>
@@ -343,15 +419,17 @@
                     </select>
                 </div>
                 <div class="settings-group">
-                    <label>Grid Style</label>
+                    <label>📊 Grid Style</label>
                     <select id="setting-grid">
                         <option value="standard">Standard</option>
                         <option value="detailed">Detailed</option>
                         <option value="minimal">Minimal</option>
                     </select>
                 </div>
-                <button class="btn btn-primary" id="btn-save-settings">Save</button>
-                <button class="btn btn-secondary" id="btn-close-settings">Close</button>
+                <div class="modal-buttons">
+                    <button class="btn btn-primary" id="btn-save-settings">💾 Save</button>
+                    <button class="btn btn-secondary" id="btn-close-settings">Close</button>
+                </div>
             </div>
         </div>
 
@@ -360,20 +438,18 @@
             <div class="modal-content hint-content">
                 <h3>💡 Hint</h3>
                 <div class="hint-text" id="hint-text">
-                    <!-- Dynamic hint content -->
+                    Hint will appear here...
                 </div>
-                <div class="hint-formula" id="hint-formula">
-                    <!-- Formula reminder -->
-                </div>
-                <button class="btn btn-secondary" id="btn-close-hint">Got it!</button>
+                <div class="hint-formula" id="hint-formula"></div>
+                <button class="btn btn-primary" id="btn-close-hint">Got it!</button>
             </div>
         </div>
 
-        <!-- Formula Reference (slide-out panel) -->
+        <!-- Formula Reference Panel -->
         <div id="formula-panel" class="slide-panel">
-            <button class="panel-toggle" id="formula-toggle">📋</button>
+            <button class="panel-toggle" id="formula-toggle">📋 Formulas</button>
             <div class="panel-content">
-                <h3>Formula Reference</h3>
+                <h3>📐 Formula Reference</h3>
                 <div class="formula-section">
                     <h4>Standard Form</h4>
                     <p>y = ax² + bx + c</p>
@@ -384,7 +460,8 @@
                 </div>
                 <div class="formula-section">
                     <h4>Turning Point</h4>
-                    <p>(-b/(2a), f(-b/(2a)))</p>
+                    <p>x = -b/(2a)</p>
+                    <p>y = f(-b/(2a))</p>
                 </div>
                 <div class="formula-section">
                     <h4>Quadratic Formula</h4>
@@ -394,13 +471,13 @@
                     <h4>Discriminant</h4>
                     <p>D = b² - 4ac</p>
                     <ul>
-                        <li>D > 0: Two real roots</li>
+                        <li>D &gt; 0: Two real roots</li>
                         <li>D = 0: One repeated root</li>
-                        <li>D < 0: No real roots</li>
+                        <li>D &lt; 0: No real roots</li>
                     </ul>
                 </div>
                 <div class="formula-section">
-                    <h4>Completing the Square</h4>
+                    <h4>Vertex Form</h4>
                     <p>y = a(x - h)² + k</p>
                     <p>Vertex: (h, k)</p>
                 </div>
@@ -408,7 +485,7 @@
         </div>
     </div>
 
-    <!-- Scripts -->
+    <!-- Scripts - Order matters! -->
     <script src="js/config.js"></script>
     <script src="js/quadratic.js"></script>
     <script src="js/canvas.js"></script>
