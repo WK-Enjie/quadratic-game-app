@@ -2,6 +2,10 @@
    QUADRATIC CATAPULT QUEST - QUESTION GENERATOR
    =====================================================
    Question templates and generation for all levels
+   CORRECTED: Proper questions for each level
+   - Beginner (Sec 1-2): Factoring, substitution only
+   - Intermediate (Sec 3): Symmetry, turning point
+   - Advanced (O-Level): Full syllabus
    ===================================================== */
 
 /**
@@ -9,47 +13,33 @@
  * Represents a single question in the game
  */
 class Question {
-    /**
-     * Create a new Question
-     * @param {Object} config - Question configuration
-     */
     constructor(config) {
         this.id = config.id || this.generateId();
         this.type = config.type;
         this.category = config.category;
         this.difficulty = config.difficulty;
         
-        // The quadratic equation
         this.quadratic = config.quadratic;
-        
-        // Optional line for intersection questions
         this.line = config.line || null;
         
-        // Question text and display
         this.questionText = config.questionText;
         this.equationDisplay = config.equationDisplay || this.quadratic.getEquation();
         
-        // Answer information
         this.correctAnswer = config.correctAnswer;
         this.answerFormat = config.answerFormat;
         this.inputType = config.inputType;
         
-        // Multiple choice options (if applicable)
         this.choices = config.choices || null;
         this.correctChoiceIndex = config.correctChoiceIndex || null;
         
-        // Hints
         this.hints = config.hints || [];
         this.hintsUsed = 0;
         
-        // Explanation for learning
         this.explanation = config.explanation;
         this.steps = config.steps || [];
         
-        // Target position for the catapult game
         this.target = config.target || this.calculateTarget();
         
-        // Metadata
         this.timeCreated = Date.now();
         this.answered = false;
         this.userAnswer = null;
@@ -57,111 +47,45 @@ class Question {
         this.timeTaken = null;
     }
 
-    /**
-     * Generate unique ID
-     */
     generateId() {
         return 'q_' + Math.random().toString(36).substr(2, 9);
     }
 
-    /**
-     * Calculate target position based on correct answer
-     */
     calculateTarget() {
-        // Place target at a point related to the answer
-        let targetX, targetY;
+        let targetX = 0, targetY = 0;
         
-        switch (this.type) {
-            case 'turning_point':
-            case 'turning_point_basic':
+        if (this.quadratic) {
+            const xInts = this.quadratic.getXIntercepts();
+            if (xInts.length > 0) {
+                targetX = xInts[0];
+                targetY = 0;
+            } else {
                 const vertex = this.quadratic.getTurningPoint();
                 targetX = vertex.x;
                 targetY = vertex.y;
-                break;
-            
-            case 'x_intercepts_factor':
-            case 'x_intercepts_quadratic_formula':
-                const intercepts = this.quadratic.getXIntercepts();
-                if (intercepts.length > 0) {
-                    targetX = intercepts[0];
-                    targetY = 0;
-                } else {
-                    targetX = this.quadratic.getLineOfSymmetry();
-                    targetY = this.quadratic.getTurningPoint().y;
-                }
-                break;
-            
-            case 'y_intercept':
-                targetX = 0;
-                targetY = this.quadratic.getYIntercept();
-                break;
-            
-            case 'line_intersection':
-                const intersections = this.quadratic.getLineIntersection(this.line.m, this.line.c);
-                if (intersections.length > 0) {
-                    targetX = intersections[0].x;
-                    targetY = intersections[0].y;
-                }
-                break;
-            
-            default:
-                // Default to turning point
-                const tp = this.quadratic.getTurningPoint();
-                targetX = tp.x;
-                targetY = tp.y;
+            }
         }
         
         return { x: targetX, y: targetY };
     }
 
-    /**
-     * Get the next available hint
-     * @returns {Object|null} Hint object or null if no more hints
-     */
     getNextHint() {
-        if (this.hintsUsed >= this.hints.length) {
-            return null;
-        }
-        
-        const hint = this.hints[this.hintsUsed];
-        this.hintsUsed++;
-        return hint;
+        if (this.hintsUsed >= this.hints.length) return null;
+        return this.hints[this.hintsUsed++];
     }
 
-    /**
-     * Check if more hints are available
-     */
     hasMoreHints() {
         return this.hintsUsed < this.hints.length;
     }
 
-    /**
-     * Validate user answer
-     * @param {string} answer - User's answer
-     * @returns {Object} Validation result
-     */
     validate(answer) {
         this.userAnswer = answer;
-        
-        const result = AnswerValidator.validate(
-            answer,
-            this.correctAnswer,
-            this.type
-        );
-        
+        const result = AnswerValidator.validate(answer, this.correctAnswer, this.type);
         this.isCorrect = result.isCorrect;
         this.answered = true;
-        
-        return {
-            ...result,
-            explanation: this.explanation,
-            steps: this.steps
-        };
+        return { ...result, explanation: this.explanation, steps: this.steps };
     }
 
-    /**
-     * Get display data for UI
-     */
     getDisplayData() {
         return {
             id: this.id,
@@ -179,165 +103,246 @@ class Question {
 }
 
 /**
+ * QuadraticGenerator
+ * Generates quadratics appropriate for each level
+ */
+const QuadraticGenerator = {
+    /**
+     * Generate quadratic for beginner level
+     * MUST have integer roots for factorization
+     */
+    generateForBeginner() {
+        // Generate from integer roots to ensure factorability
+        // y = (x - r1)(x - r2) = x² - (r1+r2)x + r1*r2
+        
+        const r1 = this.randomInt(-6, 6);
+        const r2 = this.randomInt(-6, 6);
+        
+        // a = 1 for beginners
+        const a = 1;
+        const b = -(r1 + r2);
+        const c = r1 * r2;
+        
+        return new Quadratic(a, b, c);
+    },
+    
+    /**
+     * Generate quadratic with specific integer roots
+     */
+    generateWithIntegerRoots(r1, r2, a = 1) {
+        const b = -a * (r1 + r2);
+        const c = a * r1 * r2;
+        return new Quadratic(a, b, c);
+    },
+    
+    /**
+     * Generate quadratic with integer vertex
+     */
+    generateWithIntegerVertex(h, k, a = 1) {
+        // y = a(x - h)² + k = ax² - 2ahx + ah² + k
+        const b = -2 * a * h;
+        const c = a * h * h + k;
+        return new Quadratic(a, b, c);
+    },
+    
+    /**
+     * Generate quadratic for intermediate level
+     */
+    generateForIntermediate() {
+        // Can have non-integer vertex but prefer nice numbers
+        const a = Math.random() < 0.7 ? 1 : (Math.random() < 0.5 ? -1 : 2);
+        const h = this.randomInt(-5, 5);
+        const k = this.randomInt(-8, 8);
+        
+        return Quadratic.fromVertexForm(a, h, k);
+    },
+    
+    /**
+     * Generate quadratic for advanced level
+     */
+    generateForAdvanced() {
+        const a = this.randomInt(1, 3) * (Math.random() < 0.3 ? -1 : 1);
+        const b = this.randomInt(-10, 10);
+        const c = this.randomInt(-15, 15);
+        
+        return new Quadratic(a, b, c);
+    },
+    
+    /**
+     * Generate based on difficulty
+     */
+    generate(difficultyConfig) {
+        const difficulty = difficultyConfig.id || 'beginner';
+        
+        switch (difficulty) {
+            case 'beginner':
+                return this.generateForBeginner();
+            case 'intermediate':
+                return this.generateForIntermediate();
+            case 'advanced':
+            case 'expert':
+                return this.generateForAdvanced();
+            default:
+                return this.generateForBeginner();
+        }
+    },
+    
+    /**
+     * Generate for specific question type
+     */
+    generateForQuestionType(questionType, difficultyId) {
+        switch (questionType) {
+            // Beginner types - must have integer roots
+            case 'x_intercepts_factor':
+            case 'find_x_given_y_basic':
+            case 'find_y_given_x':
+            case 'y_intercept':
+            case 'direction_opening':
+                return this.generateForBeginner();
+            
+            // Intermediate - integer vertex preferred
+            case 'axis_symmetry_basic':
+            case 'turning_point_basic':
+                const h = this.randomInt(-4, 4);
+                const k = this.randomInt(-6, 6);
+                return this.generateWithIntegerVertex(h, k, 1);
+            
+            // Intermediate - can have decimal answers
+            case 'axis_symmetry':
+            case 'turning_point':
+            case 'max_min_value':
+                return this.generateForIntermediate();
+            
+            // Advanced
+            case 'discriminant':
+            case 'nature_of_roots':
+                // Generate variety of discriminant cases
+                const rand = Math.random();
+                if (rand < 0.4) {
+                    // Two distinct roots
+                    return this.generateForBeginner();
+                } else if (rand < 0.7) {
+                    // Equal roots (perfect square)
+                    const r = this.randomInt(-5, 5);
+                    return this.generateWithIntegerRoots(r, r);
+                } else {
+                    // No real roots
+                    const a = 1;
+                    const b = this.randomInt(-4, 4);
+                    const c = Math.floor(b * b / 4) + this.randomInt(1, 5);
+                    return new Quadratic(a, b, c);
+                }
+            
+            default:
+                return this.generate(CONFIG.difficulty[difficultyId] || CONFIG.difficulty.beginner);
+        }
+    },
+    
+    randomInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+};
+
+/**
  * QuestionGenerator
- * Generates questions based on difficulty and type
+ * Creates questions appropriate for each level
  */
 const QuestionGenerator = {
     /**
-     * Generate a random question for the given difficulty
-     * @param {string} difficultyId - Difficulty level ID
-     * @returns {Question}
+     * Generate question based on difficulty
      */
     generate(difficultyId) {
-        const difficultyConfig = CONFIG.difficulty[difficultyId];
-        
-        if (!difficultyConfig) {
-            throw new Error(`Unknown difficulty: ${difficultyId}`);
+        const config = CONFIG.difficulty[difficultyId];
+        if (!config) {
+            console.error(`Unknown difficulty: ${difficultyId}`);
+            return null;
         }
         
-        // Select random topic from available topics
-        const topics = difficultyConfig.topics;
+        const topics = config.topics;
         const randomTopic = topics[Math.floor(Math.random() * topics.length)];
-        
-        // Generate quadratic suitable for this question type
         const quadratic = QuadraticGenerator.generateForQuestionType(randomTopic, difficultyId);
         
-        // Generate question based on type
         return this.generateByType(randomTopic, quadratic, difficultyId);
     },
 
     /**
-     * Generate a question of a specific type
-     * @param {string} type - Question type
-     * @param {Quadratic} quadratic - The quadratic equation
-     * @param {string} difficultyId - Difficulty level
-     * @returns {Question}
+     * Generate question by type
      */
     generateByType(type, quadratic, difficultyId) {
         const generators = {
-            // Basic questions
-            'identify_parabola': this.generateIdentifyParabola,
+            // ============ BEGINNER (Sec 1-2) ============
             'direction_opening': this.generateDirectionOpening,
             'y_intercept': this.generateYIntercept,
+            'x_intercepts_factor': this.generateXInterceptsFactor,
+            'find_y_given_x': this.generateFindYGivenX,
+            'find_x_given_y_basic': this.generateFindXGivenYBasic,
+            'evaluate_expression': this.generateEvaluateExpression,
             
-            // Symmetry questions
+            // ============ INTERMEDIATE (Sec 3) ============
             'axis_symmetry_basic': this.generateAxisSymmetryBasic,
             'axis_symmetry': this.generateAxisSymmetry,
-            
-            // Turning point questions
             'turning_point_basic': this.generateTurningPointBasic,
             'turning_point': this.generateTurningPoint,
-            
-            // X-intercepts
-            'x_intercepts_factor': this.generateXInterceptsFactor,
-            'x_intercepts_quadratic_formula': this.generateXInterceptsFormula,
-            
-            // Max/Min
             'max_min_value': this.generateMaxMinValue,
-            
-            // Vertex form
             'vertex_form': this.generateVertexForm,
-            'completing_square': this.generateCompletingSquare,
+            'discriminant_basic': this.generateDiscriminantBasic,
             
-            // Discriminant
+            // ============ ADVANCED (O-Level) ============
+            'x_intercepts_quadratic_formula': this.generateXInterceptsFormula,
             'discriminant': this.generateDiscriminant,
             'nature_of_roots': this.generateNatureOfRoots,
-            
-            // Intersection
+            'completing_square': this.generateCompletingSquare,
             'line_intersection': this.generateLineIntersection,
             'find_coordinates': this.generateFindCoordinates,
-            
-            // Range
-            'range_of_values': this.generateRangeOfValues,
-            
-            // Sketching
-            'sketch_from_equation': this.generateSketchFromEquation,
-            'sketch_from_properties': this.generateSketchFromProperties
+            'range_of_values': this.generateRangeOfValues
         };
         
         const generator = generators[type];
-        
         if (!generator) {
             console.warn(`No generator for type: ${type}, using default`);
-            return this.generateAxisSymmetry.call(this, quadratic, difficultyId);
+            return this.generateFindYGivenX.call(this, quadratic, difficultyId);
         }
         
         return generator.call(this, quadratic, difficultyId);
     },
 
-    // =====================================================
-    // BASIC QUESTION GENERATORS
-    // =====================================================
+    // =========================================================
+    // BEGINNER QUESTIONS (Sec 1-2)
+    // Only: substitution, factoring, basic evaluation
+    // =========================================================
 
     /**
-     * Generate identify parabola question (multiple choice)
-     */
-    generateIdentifyParabola(quadratic, difficultyId) {
-        // Generate 4 different quadratics
-        const options = [quadratic];
-        
-        while (options.length < 4) {
-            const newQuad = QuadraticGenerator.generate(CONFIG.difficulty[difficultyId]);
-            // Ensure they're different enough
-            if (!options.some(q => q.a === newQuad.a && q.b === newQuad.b && q.c === newQuad.c)) {
-                options.push(newQuad);
-            }
-        }
-        
-        // Shuffle options
-        const shuffled = this.shuffleArray([...options]);
-        const correctIndex = shuffled.indexOf(quadratic);
-        
-        return new Question({
-            type: 'identify_parabola',
-            category: 'basic',
-            difficulty: 1,
-            quadratic: quadratic,
-            questionText: 'Which equation matches the graph shown?',
-            inputType: 'multiple_choice',
-            correctAnswer: quadratic.getEquation(),
-            correctChoiceIndex: correctIndex,
-            choices: shuffled.map(q => q.getEquation()),
-            hints: [
-                { text: 'Look at where the parabola crosses the y-axis (the y-intercept).' },
-                { text: 'Check if the parabola opens upward (a > 0) or downward (a < 0).' }
-            ],
-            explanation: `The correct equation is ${quadratic.getEquation()}. ` +
-                        `It opens ${quadratic.getDirection()} and has y-intercept at ${quadratic.getYIntercept()}.`
-        });
-    },
-
-    /**
-     * Generate direction of opening question
+     * Direction of opening - Multiple choice
      */
     generateDirectionOpening(quadratic, difficultyId) {
         const direction = quadratic.getDirection();
+        const a = quadratic.a;
         
         return new Question({
             type: 'direction_opening',
             category: 'basic',
             difficulty: 1,
             quadratic: quadratic,
-            questionText: 'Does this parabola open upward or downward?',
+            questionText: `For the equation ${quadratic.getEquation()}, does the graph open upwards or downwards?`,
             inputType: 'multiple_choice',
             correctAnswer: direction,
             correctChoiceIndex: direction === 'upward' ? 0 : 1,
-            choices: ['Upward (∪ shape)', 'Downward (∩ shape)'],
+            choices: ['Upwards (U-shape)', 'Downwards (n-shape)'],
             hints: [
-                { text: 'Look at the coefficient of x² (the "a" value).' },
-                { text: 'If a > 0, the parabola opens upward. If a < 0, it opens downward.' }
+                { text: 'Look at the number in front of x².' },
+                { text: 'If the number is positive, it opens upwards. If negative, it opens downwards.' }
             ],
-            explanation: `The parabola opens ${direction} because the coefficient of x² is ${quadratic.a}, ` +
-                        `which is ${quadratic.a > 0 ? 'positive' : 'negative'}.`,
+            explanation: `The coefficient of x² is ${a}. Since ${a} is ${a > 0 ? 'positive' : 'negative'}, the graph opens ${direction}.`,
             steps: [
-                `Identify the coefficient a = ${quadratic.a}`,
-                `Since a ${quadratic.a > 0 ? '> 0' : '< 0'}, the parabola opens ${direction}`
+                `Look at the coefficient of x²: ${a}`,
+                `${a} is ${a > 0 ? 'positive (> 0)' : 'negative (< 0)'}`,
+                `Therefore, the graph opens ${direction}`
             ]
         });
     },
 
     /**
-     * Generate y-intercept question
+     * Y-intercept - Just find the constant c
      */
     generateYIntercept(quadratic, difficultyId) {
         const yInt = quadratic.getYIntercept();
@@ -347,60 +352,237 @@ const QuestionGenerator = {
             category: 'basic',
             difficulty: 1,
             quadratic: quadratic,
-            questionText: 'Find the y-intercept of this quadratic.',
-            answerFormat: 'Enter the y-value (e.g., 5 or -3)',
+            questionText: `For ${quadratic.getEquation()}, find the y-intercept.`,
+            answerFormat: 'Enter a number',
             inputType: 'value',
             correctAnswer: yInt,
+            choices: null,
             hints: [
-                { text: 'The y-intercept occurs when x = 0.' },
-                { text: 'In y = ax² + bx + c, the y-intercept is simply c.' }
+                { text: 'The y-intercept is where the graph crosses the y-axis.' },
+                { text: 'At the y-axis, x = 0. What is y when x = 0?' }
             ],
-            explanation: `The y-intercept is ${yInt}. When x = 0, y = ${quadratic.a}(0)² + ${quadratic.b}(0) + ${quadratic.c} = ${yInt}.`,
+            explanation: `When x = 0, y = ${quadratic.a}(0)² + ${quadratic.b}(0) + ${quadratic.c} = ${yInt}. The y-intercept is ${yInt}.`,
             steps: [
-                'Set x = 0 in the equation',
+                'The y-intercept is where x = 0',
                 `y = ${quadratic.a}(0)² + ${quadratic.b}(0) + ${quadratic.c}`,
+                `y = 0 + 0 + ${quadratic.c}`,
                 `y = ${yInt}`
             ]
         });
     },
 
-    // =====================================================
-    // SYMMETRY QUESTION GENERATORS
-    // =====================================================
+    /**
+     * Find y given x - Basic substitution
+     */
+    generateFindYGivenX(quadratic, difficultyId) {
+        // Choose a simple integer x value
+        const x = QuadraticGenerator.randomInt(-5, 5);
+        const y = quadratic.evaluate(x);
+        
+        return new Question({
+            type: 'find_y_given_x',
+            category: 'basic',
+            difficulty: 1,
+            quadratic: quadratic,
+            questionText: `For ${quadratic.getEquation()}, find the value of y when x = ${x}.`,
+            answerFormat: 'Enter a number',
+            inputType: 'value',
+            correctAnswer: y,
+            hints: [
+                { text: `Substitute x = ${x} into the equation.` },
+                { text: `Calculate ${quadratic.a}(${x})² + ${quadratic.b}(${x}) + ${quadratic.c}` }
+            ],
+            explanation: `When x = ${x}: y = ${quadratic.a}(${x})² + ${quadratic.b}(${x}) + ${quadratic.c} = ${y}`,
+            steps: [
+                `Substitute x = ${x} into y = ${quadratic.getStandardForm()}`,
+                `y = ${quadratic.a}(${x})² + ${quadratic.b}(${x}) + ${quadratic.c}`,
+                `y = ${quadratic.a}(${x * x}) + ${quadratic.b * x} + ${quadratic.c}`,
+                `y = ${quadratic.a * x * x} + ${quadratic.b * x} + ${quadratic.c}`,
+                `y = ${y}`
+            ]
+        });
+    },
 
     /**
-     * Generate basic axis of symmetry question
+     * Find x given y - Requires solving/factoring
+     * For beginners, use y = 0 (x-intercepts) or simple values
+     */
+    generateFindXGivenYBasic(quadratic, difficultyId) {
+        // For beginners, ask for x-intercepts (y = 0)
+        const xIntercepts = quadratic.getXIntercepts();
+        
+        if (xIntercepts.length === 0) {
+            // No real roots, regenerate
+            const newQuad = QuadraticGenerator.generateForBeginner();
+            return this.generateFindXGivenYBasic(newQuad, difficultyId);
+        }
+        
+        // Round to integers
+        const roots = xIntercepts.map(x => Math.round(x));
+        
+        return new Question({
+            type: 'find_x_given_y_basic',
+            category: 'basic',
+            difficulty: 2,
+            quadratic: quadratic,
+            questionText: `For ${quadratic.getEquation()}, find the value(s) of x when y = 0.`,
+            answerFormat: roots.length === 1 ? 'x = ?' : 'x = ? or x = ?',
+            inputType: 'values',
+            correctAnswer: roots,
+            hints: [
+                { text: 'Set the equation equal to 0 and solve.' },
+                { text: 'Try to factorise the expression.' },
+                { text: `Look for two numbers that multiply to give ${quadratic.c} and add to give ${quadratic.b}.` }
+            ],
+            explanation: roots.length === 1 
+                ? `Solving ${quadratic.getStandardForm()} = 0 gives x = ${roots[0]} (repeated root)`
+                : `Solving ${quadratic.getStandardForm()} = 0 gives x = ${roots[0]} or x = ${roots[1]}`,
+            steps: this.getFactoringSteps(quadratic, roots)
+        });
+    },
+
+    /**
+     * Get factoring steps for explanation
+     */
+    getFactoringSteps(quadratic, roots) {
+        if (roots.length === 1) {
+            const r = roots[0];
+            return [
+                `Set ${quadratic.getStandardForm()} = 0`,
+                `Factorise: (x ${r >= 0 ? '- ' + r : '+ ' + (-r)})² = 0`,
+                `x ${r >= 0 ? '- ' + r : '+ ' + (-r)} = 0`,
+                `x = ${r}`
+            ];
+        } else {
+            const r1 = roots[0];
+            const r2 = roots[1];
+            return [
+                `Set ${quadratic.getStandardForm()} = 0`,
+                `Find two numbers that multiply to ${quadratic.c} and add to ${quadratic.b}`,
+                `The numbers are ${-r1} and ${-r2}`,
+                `Factorise: (x ${r1 >= 0 ? '- ' + r1 : '+ ' + (-r1)})(x ${r2 >= 0 ? '- ' + r2 : '+ ' + (-r2)}) = 0`,
+                `x = ${r1} or x = ${r2}`
+            ];
+        }
+    },
+
+    /**
+     * X-intercepts by factoring
+     */
+    generateXInterceptsFactor(quadratic, difficultyId) {
+        // Ensure we have integer roots
+        if (!quadratic.hasIntegerRoots()) {
+            quadratic = QuadraticGenerator.generateForBeginner();
+        }
+        
+        const intercepts = quadratic.getXIntercepts();
+        
+        if (intercepts.length === 0) {
+            // Regenerate with roots
+            quadratic = QuadraticGenerator.generateForBeginner();
+            return this.generateXInterceptsFactor(quadratic, difficultyId);
+        }
+        
+        const roots = intercepts.map(x => Math.round(x));
+        const factored = quadratic.getFactoredForm();
+        
+        return new Question({
+            type: 'x_intercepts_factor',
+            category: 'intercepts',
+            difficulty: 2,
+            quadratic: quadratic,
+            questionText: `Solve ${quadratic.getStandardForm()} = 0 by factorisation.`,
+            answerFormat: roots.length === 1 ? 'x = ?' : 'x = ?, ?',
+            inputType: 'values',
+            correctAnswer: roots,
+            hints: [
+                { text: `Find two numbers that multiply to give ${quadratic.c}.` },
+                { text: `Those numbers should also add to give ${quadratic.b}.` },
+                { text: factored ? `The factorised form is ${factored}` : 'Keep trying!' }
+            ],
+            explanation: `${quadratic.getStandardForm()} = ${factored} = 0, so ${roots.length === 1 ? `x = ${roots[0]}` : `x = ${roots[0]} or x = ${roots[1]}`}`,
+            steps: this.getFactoringSteps(quadratic, roots)
+        });
+    },
+
+    /**
+     * Evaluate expression - Basic calculation
+     */
+    generateEvaluateExpression(quadratic, difficultyId) {
+        const x = QuadraticGenerator.randomInt(-4, 4);
+        const y = quadratic.evaluate(x);
+        
+        return new Question({
+            type: 'evaluate_expression',
+            category: 'basic',
+            difficulty: 1,
+            quadratic: quadratic,
+            questionText: `If y = ${quadratic.getStandardForm()}, calculate y when x = ${x}.`,
+            answerFormat: 'y = ?',
+            inputType: 'value',
+            correctAnswer: y,
+            hints: [
+                { text: `Replace every x with ${x}.` },
+                { text: `Remember: (${x})² = ${x * x}` }
+            ],
+            explanation: `y = ${quadratic.a}(${x})² + ${quadratic.b}(${x}) + ${quadratic.c} = ${y}`,
+            steps: [
+                `y = ${quadratic.a}(${x})² + ${quadratic.b}(${x}) + ${quadratic.c}`,
+                `y = ${quadratic.a} × ${x * x} + ${quadratic.b * x} + ${quadratic.c}`,
+                `y = ${quadratic.a * x * x} + ${quadratic.b * x} + ${quadratic.c}`,
+                `y = ${y}`
+            ]
+        });
+    },
+
+    // =========================================================
+    // INTERMEDIATE QUESTIONS (Sec 3)
+    // Line of symmetry, turning point, max/min
+    // =========================================================
+
+    /**
+     * Line of symmetry - Basic (integer answer)
      */
     generateAxisSymmetryBasic(quadratic, difficultyId) {
+        // Ensure integer line of symmetry
         const los = quadratic.getLineOfSymmetry();
+        
+        if (!Number.isInteger(los)) {
+            // Regenerate with integer symmetry
+            const h = QuadraticGenerator.randomInt(-5, 5);
+            const k = QuadraticGenerator.randomInt(-8, 8);
+            quadratic = QuadraticGenerator.generateWithIntegerVertex(h, k, 1);
+        }
+        
+        const lineOfSym = Math.round(quadratic.getLineOfSymmetry());
         
         return new Question({
             type: 'axis_symmetry_basic',
             category: 'symmetry',
             difficulty: 2,
             quadratic: quadratic,
-            questionText: 'Find the line of symmetry (axis of symmetry) of this parabola.',
+            questionText: `Find the equation of the line of symmetry for ${quadratic.getEquation()}.`,
             answerFormat: 'x = ?',
             inputType: 'equation',
-            correctAnswer: los,
+            correctAnswer: lineOfSym,
             hints: [
-                { text: 'The line of symmetry is a vertical line that passes through the vertex.' },
-                { text: 'Use the formula: x = -b/(2a)', formula: 'x = -b/(2a)' }
+                { text: 'The line of symmetry passes through the turning point.' },
+                { text: 'Use the formula: x = -b ÷ (2a)', formula: 'x = -b/(2a)' },
+                { text: `Here, a = ${quadratic.a} and b = ${quadratic.b}` }
             ],
-            explanation: `The line of symmetry is x = ${QuadraticUtils.formatNumber(los)}. ` +
-                        `Using x = -b/(2a) = -(${quadratic.b})/(2×${quadratic.a}) = ${QuadraticUtils.formatNumber(los)}.`,
+            explanation: `Using x = -b/(2a) = -(${quadratic.b})/(2×${quadratic.a}) = ${lineOfSym}`,
             steps: [
-                `Identify a = ${quadratic.a} and b = ${quadratic.b}`,
-                `Apply the formula: x = -b/(2a)`,
-                `x = -(${quadratic.b})/(2 × ${quadratic.a})`,
-                `x = ${-quadratic.b}/${2 * quadratic.a}`,
-                `x = ${QuadraticUtils.formatNumber(los)}`
+                `From y = ${quadratic.getStandardForm()}: a = ${quadratic.a}, b = ${quadratic.b}`,
+                `Line of symmetry: x = -b/(2a)`,
+                `x = -(${quadratic.b}) ÷ (2 × ${quadratic.a})`,
+                `x = ${-quadratic.b} ÷ ${2 * quadratic.a}`,
+                `x = ${lineOfSym}`
             ]
         });
     },
 
     /**
-     * Generate axis of symmetry question (intermediate)
+     * Line of symmetry - Can have decimal
      */
     generateAxisSymmetry(quadratic, difficultyId) {
         const los = quadratic.getLineOfSymmetry();
@@ -410,205 +592,98 @@ const QuestionGenerator = {
             category: 'symmetry',
             difficulty: 3,
             quadratic: quadratic,
-            questionText: 'Determine the equation of the line of symmetry.',
-            answerFormat: 'x = ?',
+            questionText: `Find the line of symmetry for ${quadratic.getEquation()}.`,
+            answerFormat: 'x = ? (can be decimal)',
             inputType: 'equation',
             correctAnswer: los,
             hints: [
-                { text: 'The axis of symmetry has the equation x = -b/(2a).' },
-                { text: `Here, a = ${quadratic.a} and b = ${quadratic.b}.` }
+                { text: 'Use the formula x = -b/(2a)', formula: 'x = -b/(2a)' }
             ],
-            explanation: `Line of symmetry: x = ${QuadraticUtils.formatNumber(los)}`,
+            explanation: `x = -b/(2a) = -(${quadratic.b})/(2×${quadratic.a}) = ${los}`,
             steps: [
-                `From y = ${quadratic.a}x² + ${quadratic.b}x + ${quadratic.c}`,
                 `a = ${quadratic.a}, b = ${quadratic.b}`,
                 `x = -b/(2a) = -(${quadratic.b})/(2×${quadratic.a})`,
+                `x = ${-quadratic.b}/${2 * quadratic.a}`,
                 `x = ${QuadraticUtils.formatNumber(los)}`
             ]
         });
     },
 
-    // =====================================================
-    // TURNING POINT QUESTION GENERATORS
-    // =====================================================
-
     /**
-     * Generate basic turning point question
+     * Turning point - Basic (integer coordinates)
      */
     generateTurningPointBasic(quadratic, difficultyId) {
         const tp = quadratic.getTurningPoint();
+        
+        // Check if integer
+        if (!Number.isInteger(tp.x) || !Number.isInteger(tp.y)) {
+            const h = QuadraticGenerator.randomInt(-4, 4);
+            const k = QuadraticGenerator.randomInt(-6, 6);
+            quadratic = QuadraticGenerator.generateWithIntegerVertex(h, k, 1);
+        }
+        
+        const vertex = quadratic.getTurningPoint();
+        const roundedVertex = {
+            x: Math.round(vertex.x),
+            y: Math.round(vertex.y)
+        };
         
         return new Question({
             type: 'turning_point_basic',
             category: 'turning_point',
             difficulty: 2,
             quadratic: quadratic,
-            questionText: 'Find the coordinates of the turning point (vertex).',
+            questionText: `Find the coordinates of the turning point for ${quadratic.getEquation()}.`,
             answerFormat: '(x, y)',
             inputType: 'coordinate',
-            correctAnswer: tp,
+            correctAnswer: roundedVertex,
             hints: [
                 { text: 'First find the x-coordinate using x = -b/(2a).' },
-                { text: 'Then substitute this x-value into the equation to find y.' }
+                { text: 'Then substitute this x value back into the equation to find y.' }
             ],
-            explanation: `The turning point is ${QuadraticUtils.formatCoordinate(tp)}. ` +
-                        `This is a ${quadratic.getExtremumType()} point.`,
+            explanation: `Turning point: (${roundedVertex.x}, ${roundedVertex.y})`,
             steps: [
-                `Find x: x = -b/(2a) = -(${quadratic.b})/(2×${quadratic.a}) = ${QuadraticUtils.formatNumber(tp.x)}`,
-                `Find y: Substitute x = ${QuadraticUtils.formatNumber(tp.x)} into the equation`,
-                `y = ${quadratic.a}(${QuadraticUtils.formatNumber(tp.x)})² + ${quadratic.b}(${QuadraticUtils.formatNumber(tp.x)}) + ${quadratic.c}`,
-                `y = ${QuadraticUtils.formatNumber(tp.y)}`,
-                `Turning point: ${QuadraticUtils.formatCoordinate(tp)}`
+                `x-coordinate: x = -b/(2a) = -(${quadratic.b})/(2×${quadratic.a}) = ${roundedVertex.x}`,
+                `y-coordinate: substitute x = ${roundedVertex.x}`,
+                `y = ${quadratic.a}(${roundedVertex.x})² + ${quadratic.b}(${roundedVertex.x}) + ${quadratic.c}`,
+                `y = ${roundedVertex.y}`,
+                `Turning point: (${roundedVertex.x}, ${roundedVertex.y})`
             ]
         });
     },
 
     /**
-     * Generate turning point question (intermediate)
+     * Turning point - General
      */
     generateTurningPoint(quadratic, difficultyId) {
         const tp = quadratic.getTurningPoint();
-        const extremumType = quadratic.getExtremumType();
+        const type = quadratic.getExtremumType();
         
         return new Question({
             type: 'turning_point',
             category: 'turning_point',
             difficulty: 3,
             quadratic: quadratic,
-            questionText: `Find the ${extremumType} point of the quadratic function.`,
+            questionText: `Find the ${type} point of ${quadratic.getEquation()}.`,
             answerFormat: '(x, y)',
             inputType: 'coordinate',
             correctAnswer: tp,
             hints: [
-                { 
-                    text: `This parabola opens ${quadratic.getDirection()}, so it has a ${extremumType}.`,
-                    formula: 'x = -b/(2a)'
-                },
-                {
-                    text: 'The turning point lies on the line of symmetry.'
-                }
+                { text: `Since a = ${quadratic.a} ${quadratic.a > 0 ? '> 0' : '< 0'}, this is a ${type}.` },
+                { text: 'Use x = -b/(2a) to find the x-coordinate.' }
             ],
-            explanation: `The ${extremumType} point is ${QuadraticUtils.formatCoordinate(tp)}. ` +
-                        `Since a = ${quadratic.a} ${quadratic.a > 0 ? '> 0' : '< 0'}, this is a ${extremumType}.`,
+            explanation: `The ${type} point is (${QuadraticUtils.formatNumber(tp.x)}, ${QuadraticUtils.formatNumber(tp.y)})`,
             steps: [
-                `Since a = ${quadratic.a} ${quadratic.a > 0 ? '> 0' : '< 0'}, the parabola has a ${extremumType}`,
-                `x-coordinate: x = -b/(2a) = -(${quadratic.b})/(2×${quadratic.a}) = ${QuadraticUtils.formatNumber(tp.x)}`,
-                `y-coordinate: y = f(${QuadraticUtils.formatNumber(tp.x)}) = ${QuadraticUtils.formatNumber(tp.y)}`,
-                `${extremumType.charAt(0).toUpperCase() + extremumType.slice(1)} point: ${QuadraticUtils.formatCoordinate(tp)}`
-            ]
-        });
-    },
-
-    // =====================================================
-    // X-INTERCEPTS QUESTION GENERATORS
-    // =====================================================
-
-    /**
-     * Generate x-intercepts by factoring question
-     */
-    generateXInterceptsFactor(quadratic, difficultyId) {
-        // Ensure we have integer roots for factoring
-        let q = quadratic;
-        if (!quadratic.hasIntegerRoots()) {
-            q = QuadraticGenerator.generateWithProperties({ hasIntegerRoots: true });
-        }
-        
-        const intercepts = q.getXIntercepts();
-        const factored = q.getFactoredForm();
-        
-        let questionText, answerFormat;
-        
-        if (intercepts.length === 0) {
-            questionText = 'Find the x-intercepts of this quadratic (if any exist).';
-            answerFormat = 'Enter x values separated by comma, or "none"';
-        } else if (intercepts.length === 1) {
-            questionText = 'Find the x-intercept(s) of this quadratic. (Hint: there is a repeated root)';
-            answerFormat = 'x = ?';
-        } else {
-            questionText = 'Find the x-intercepts by factoring.';
-            answerFormat = 'x = ?, ? (two values)';
-        }
-        
-        return new Question({
-            type: 'x_intercepts_factor',
-            category: 'intercepts',
-            difficulty: 3,
-            quadratic: q,
-            questionText: questionText,
-            answerFormat: answerFormat,
-            inputType: 'values',
-            correctAnswer: intercepts,
-            hints: [
-                { text: 'Set y = 0 and solve for x.' },
-                { text: 'Try to factor the quadratic as (x - r₁)(x - r₂) = 0.' },
-                { text: factored ? `The factored form is: ${factored}` : 'This quadratic may not factor nicely.' }
-            ],
-            explanation: intercepts.length > 0 
-                ? `The x-intercepts are x = ${intercepts.map(x => QuadraticUtils.formatNumber(x)).join(' and x = ')}.`
-                : 'This quadratic has no real x-intercepts (the discriminant is negative).',
-            steps: intercepts.length > 0 ? [
-                `Set y = 0: ${q.a}x² + ${q.b}x + ${q.c} = 0`,
-                factored ? `Factor: ${factored} = 0` : 'Factor the quadratic',
-                intercepts.length === 1 
-                    ? `x = ${QuadraticUtils.formatNumber(intercepts[0])} (repeated root)`
-                    : `x = ${QuadraticUtils.formatNumber(intercepts[0])} or x = ${QuadraticUtils.formatNumber(intercepts[1])}`
-            ] : [
-                'Set y = 0 and check discriminant',
-                `D = b² - 4ac = ${q.b}² - 4(${q.a})(${q.c}) = ${q.getDiscriminant()}`,
-                'Since D < 0, there are no real x-intercepts'
+                `a = ${quadratic.a} ${quadratic.a > 0 ? '> 0' : '< 0'} → ${type}`,
+                `x = -b/(2a) = ${QuadraticUtils.formatNumber(tp.x)}`,
+                `y = f(${QuadraticUtils.formatNumber(tp.x)}) = ${QuadraticUtils.formatNumber(tp.y)}`,
+                `${type.charAt(0).toUpperCase() + type.slice(1)} point: (${QuadraticUtils.formatNumber(tp.x)}, ${QuadraticUtils.formatNumber(tp.y)})`
             ]
         });
     },
 
     /**
-     * Generate x-intercepts using quadratic formula
-     */
-    generateXInterceptsFormula(quadratic, difficultyId) {
-        const intercepts = quadratic.getXIntercepts();
-        const D = quadratic.getDiscriminant();
-        
-        return new Question({
-            type: 'x_intercepts_quadratic_formula',
-            category: 'intercepts',
-            difficulty: 4,
-            quadratic: quadratic,
-            questionText: 'Find the x-intercepts using the quadratic formula. Give your answers to 2 decimal places if necessary.',
-            answerFormat: intercepts.length > 0 ? 'x = ?, ?' : 'Enter "none" if no real roots',
-            inputType: 'values',
-            correctAnswer: intercepts,
-            hints: [
-                { 
-                    text: 'Use the quadratic formula.',
-                    formula: 'x = (-b ± √(b²-4ac))/(2a)'
-                },
-                { 
-                    text: `Here: a = ${quadratic.a}, b = ${quadratic.b}, c = ${quadratic.c}` 
-                },
-                {
-                    text: `The discriminant D = b² - 4ac = ${QuadraticUtils.formatNumber(D)}`
-                }
-            ],
-            explanation: intercepts.length > 0
-                ? `Using x = (-b ± √D)/(2a), the x-intercepts are ${intercepts.map(x => QuadraticUtils.formatNumber(x)).join(' and ')}.`
-                : `Since D = ${QuadraticUtils.formatNumber(D)} < 0, there are no real x-intercepts.`,
-            steps: [
-                `a = ${quadratic.a}, b = ${quadratic.b}, c = ${quadratic.c}`,
-                `D = b² - 4ac = (${quadratic.b})² - 4(${quadratic.a})(${quadratic.c}) = ${QuadraticUtils.formatNumber(D)}`,
-                D >= 0 ? `√D = ${QuadraticUtils.formatNumber(Math.sqrt(D))}` : 'D < 0, no real roots',
-                ...(intercepts.length > 0 ? [
-                    `x = (-(${quadratic.b}) ± ${QuadraticUtils.formatNumber(Math.sqrt(D))})/(2×${quadratic.a})`,
-                    `x = ${QuadraticUtils.formatNumber(intercepts[0])} or x = ${intercepts.length > 1 ? QuadraticUtils.formatNumber(intercepts[1]) : QuadraticUtils.formatNumber(intercepts[0])}`
-                ] : [])
-            ]
-        });
-    },
-
-    // =====================================================
-    // MAX/MIN VALUE QUESTION GENERATOR
-    // =====================================================
-
-    /**
-     * Generate maximum/minimum value question
+     * Maximum/Minimum value
      */
     generateMaxMinValue(quadratic, difficultyId) {
         const extremum = quadratic.getExtremumValue();
@@ -619,31 +694,25 @@ const QuestionGenerator = {
             category: 'optimization',
             difficulty: 3,
             quadratic: quadratic,
-            questionText: `Find the ${type} value of y for this quadratic function.`,
+            questionText: `Find the ${type} value of y for ${quadratic.getEquation()}.`,
             answerFormat: 'y = ?',
             inputType: 'value',
             correctAnswer: extremum,
             hints: [
-                { text: `Since a = ${quadratic.a} ${quadratic.a > 0 ? '> 0' : '< 0'}, the parabola has a ${type}.` },
-                { text: 'The extreme value occurs at the turning point.' },
-                { text: 'Find the y-coordinate of the vertex.' }
+                { text: `This parabola opens ${quadratic.getDirection()}, so it has a ${type}.` },
+                { text: 'Find the y-coordinate of the turning point.' }
             ],
-            explanation: `The ${type} value is y = ${QuadraticUtils.formatNumber(extremum)}, occurring at x = ${QuadraticUtils.formatNumber(quadratic.getLineOfSymmetry())}.`,
+            explanation: `The ${type} value is y = ${QuadraticUtils.formatNumber(extremum)}`,
             steps: [
-                `a = ${quadratic.a} ${quadratic.a > 0 ? '> 0' : '< 0'} → ${type}`,
+                `a = ${quadratic.a} → parabola has a ${type}`,
                 `x = -b/(2a) = ${QuadraticUtils.formatNumber(quadratic.getLineOfSymmetry())}`,
-                `y = f(${QuadraticUtils.formatNumber(quadratic.getLineOfSymmetry())}) = ${QuadraticUtils.formatNumber(extremum)}`,
-                `${type.charAt(0).toUpperCase() + type.slice(1)} value: y = ${QuadraticUtils.formatNumber(extremum)}`
+                `${type} y = f(${QuadraticUtils.formatNumber(quadratic.getLineOfSymmetry())}) = ${QuadraticUtils.formatNumber(extremum)}`
             ]
         });
     },
 
-    // =====================================================
-    // VERTEX FORM QUESTION GENERATORS
-    // =====================================================
-
     /**
-     * Generate vertex form identification question
+     * Vertex form identification
      */
     generateVertexForm(quadratic, difficultyId) {
         const { a, h, k } = quadratic.getVertexFormCoefficients();
@@ -654,26 +723,161 @@ const QuestionGenerator = {
             category: 'transformation',
             difficulty: 3,
             quadratic: quadratic,
-            questionText: 'Identify the vertex (turning point) from the equation.',
             equationDisplay: `y = ${vertexFormStr}`,
+            questionText: `Given y = ${vertexFormStr}, find the coordinates of the vertex.`,
             answerFormat: '(h, k)',
             inputType: 'coordinate',
             correctAnswer: { x: h, y: k },
             hints: [
-                { text: 'In vertex form y = a(x - h)² + k, the vertex is at (h, k).' },
-                { text: 'Be careful with signs! (x - h) means h is positive.' }
+                { text: 'In y = a(x - h)² + k, the vertex is at (h, k).' },
+                { text: 'Be careful with signs!' }
             ],
-            explanation: `The vertex form is y = ${vertexFormStr}. The vertex is at (${QuadraticUtils.formatNumber(h)}, ${QuadraticUtils.formatNumber(k)}).`,
+            explanation: `From y = ${vertexFormStr}, the vertex is (${QuadraticUtils.formatNumber(h)}, ${QuadraticUtils.formatNumber(k)})`,
             steps: [
-                `Vertex form: y = a(x - h)² + k`,
-                `Comparing: a = ${QuadraticUtils.formatNumber(a)}, h = ${QuadraticUtils.formatNumber(h)}, k = ${QuadraticUtils.formatNumber(k)}`,
+                `Compare with y = a(x - h)² + k`,
+                `h = ${QuadraticUtils.formatNumber(h)}, k = ${QuadraticUtils.formatNumber(k)}`,
                 `Vertex: (${QuadraticUtils.formatNumber(h)}, ${QuadraticUtils.formatNumber(k)})`
             ]
         });
     },
 
     /**
-     * Generate completing the square question
+     * Discriminant - Basic
+     */
+    generateDiscriminantBasic(quadratic, difficultyId) {
+        const D = quadratic.getDiscriminant();
+        
+        return new Question({
+            type: 'discriminant_basic',
+            category: 'roots',
+            difficulty: 2,
+            quadratic: quadratic,
+            questionText: `Calculate the discriminant of ${quadratic.getEquation()}.`,
+            answerFormat: 'D = ?',
+            inputType: 'value',
+            correctAnswer: D,
+            hints: [
+                { text: 'The discriminant formula is D = b² - 4ac', formula: 'D = b² - 4ac' },
+                { text: `a = ${quadratic.a}, b = ${quadratic.b}, c = ${quadratic.c}` }
+            ],
+            explanation: `D = (${quadratic.b})² - 4(${quadratic.a})(${quadratic.c}) = ${D}`,
+            steps: [
+                `D = b² - 4ac`,
+                `D = (${quadratic.b})² - 4(${quadratic.a})(${quadratic.c})`,
+                `D = ${quadratic.b * quadratic.b} - ${4 * quadratic.a * quadratic.c}`,
+                `D = ${D}`
+            ]
+        });
+    },
+
+    // =========================================================
+    // ADVANCED QUESTIONS (O-Level)
+    // =========================================================
+
+    /**
+     * X-intercepts using quadratic formula
+     */
+    generateXInterceptsFormula(quadratic, difficultyId) {
+        const intercepts = quadratic.getXIntercepts();
+        const D = quadratic.getDiscriminant();
+        
+        return new Question({
+            type: 'x_intercepts_quadratic_formula',
+            category: 'intercepts',
+            difficulty: 4,
+            quadratic: quadratic,
+            questionText: `Solve ${quadratic.getStandardForm()} = 0 using the quadratic formula. Give answers to 2 d.p. if needed.`,
+            answerFormat: intercepts.length > 0 ? 'x = ?, ?' : 'No real roots',
+            inputType: 'values',
+            correctAnswer: intercepts.length > 0 ? intercepts.map(x => Math.round(x * 100) / 100) : [],
+            hints: [
+                { text: 'Use x = (-b ± √(b²-4ac))/(2a)', formula: 'x = (-b ± √D)/(2a)' },
+                { text: `D = ${D}` }
+            ],
+            explanation: intercepts.length > 0
+                ? `x = ${intercepts.map(x => QuadraticUtils.formatNumber(x)).join(' or x = ')}`
+                : 'No real roots (D < 0)',
+            steps: [
+                `D = b² - 4ac = ${D}`,
+                ...(D >= 0 ? [
+                    `√D = ${QuadraticUtils.formatNumber(Math.sqrt(D))}`,
+                    `x = (${-quadratic.b} ± ${QuadraticUtils.formatNumber(Math.sqrt(D))})/${2 * quadratic.a}`,
+                    intercepts.map(x => `x = ${QuadraticUtils.formatNumber(x)}`).join(' or ')
+                ] : ['D < 0, no real solutions'])
+            ]
+        });
+    },
+
+    /**
+     * Discriminant calculation
+     */
+    generateDiscriminant(quadratic, difficultyId) {
+        const D = quadratic.getDiscriminant();
+        
+        return new Question({
+            type: 'discriminant',
+            category: 'roots',
+            difficulty: 3,
+            quadratic: quadratic,
+            questionText: `Find the discriminant of ${quadratic.getEquation()}.`,
+            answerFormat: 'D = b² - 4ac',
+            inputType: 'value',
+            correctAnswer: D,
+            hints: [
+                { text: 'D = b² - 4ac', formula: 'D = b² - 4ac' }
+            ],
+            explanation: `D = (${quadratic.b})² - 4(${quadratic.a})(${quadratic.c}) = ${D}`,
+            steps: [
+                `a = ${quadratic.a}, b = ${quadratic.b}, c = ${quadratic.c}`,
+                `D = b² - 4ac`,
+                `D = ${quadratic.b * quadratic.b} - ${4 * quadratic.a * quadratic.c}`,
+                `D = ${D}`
+            ]
+        });
+    },
+
+    /**
+     * Nature of roots
+     */
+    generateNatureOfRoots(quadratic, difficultyId) {
+        const D = quadratic.getDiscriminant();
+        const nature = quadratic.getNatureOfRoots();
+        
+        const choices = [
+            'Two different real roots',
+            'Two equal real roots',
+            'No real roots'
+        ];
+        
+        let correctIndex = 0;
+        if (D === 0) correctIndex = 1;
+        else if (D < 0) correctIndex = 2;
+        
+        return new Question({
+            type: 'nature_of_roots',
+            category: 'roots',
+            difficulty: 3,
+            quadratic: quadratic,
+            questionText: `Determine the nature of the roots of ${quadratic.getEquation()}.`,
+            inputType: 'multiple_choice',
+            correctAnswer: choices[correctIndex],
+            correctChoiceIndex: correctIndex,
+            choices: choices,
+            hints: [
+                { text: 'First calculate D = b² - 4ac' },
+                { text: 'D > 0: two different roots, D = 0: equal roots, D < 0: no real roots' }
+            ],
+            explanation: `D = ${D}. Since D ${D > 0 ? '> 0' : D === 0 ? '= 0' : '< 0'}, there are ${choices[correctIndex].toLowerCase()}.`,
+            steps: [
+                `D = b² - 4ac = ${D}`,
+                `D ${D > 0 ? '> 0' : D === 0 ? '= 0' : '< 0'}`,
+                `Therefore: ${choices[correctIndex]}`
+            ]
+        });
+    },
+
+    /**
+     * Completing the square
      */
     generateCompletingSquare(quadratic, difficultyId) {
         const { a, h, k } = quadratic.getVertexFormCoefficients();
@@ -684,235 +888,101 @@ const QuestionGenerator = {
             category: 'transformation',
             difficulty: 4,
             quadratic: quadratic,
-            questionText: 'Complete the square to write this quadratic in vertex form y = a(x - h)² + k.',
-            answerFormat: 'a(x - h)² + k',
-            inputType: 'equation',
+            questionText: `Write ${quadratic.getEquation()} in the form a(x - h)² + k.`,
+            answerFormat: 'State the values of a, h and k',
+            inputType: 'multiple_values',
             correctAnswer: { a, h, k },
             hints: [
-                { 
-                    text: 'Factor out the coefficient of x² first (if not 1).',
-                    formula: 'y = a(x² + (b/a)x) + c'
-                },
-                { 
-                    text: 'Add and subtract (b/2a)² inside the bracket.',
-                    formula: 'Complete: (x + b/2a)²'
-                },
-                {
-                    text: `The vertex form should be y = ${vertexFormStr}`
-                }
+                { text: 'Complete the square by halving the coefficient of x.' },
+                { text: 'y = a(x² + (b/a)x) + c, then complete the square inside.' }
             ],
-            explanation: `${quadratic.getEquation()} = ${vertexFormStr}`,
-            steps: quadratic.a === 1 ? [
-                `y = x² + ${quadratic.b}x + ${quadratic.c}`,
-                `y = (x² + ${quadratic.b}x + ${(quadratic.b/2)**2}) - ${(quadratic.b/2)**2} + ${quadratic.c}`,
-                `y = (x + ${quadratic.b/2})² + ${k}`,
-                `y = ${vertexFormStr}`
-            ] : [
-                `y = ${quadratic.a}x² + ${quadratic.b}x + ${quadratic.c}`,
-                `y = ${quadratic.a}(x² + ${quadratic.b/quadratic.a}x) + ${quadratic.c}`,
-                `y = ${quadratic.a}(x + ${-h})² + ${k}`,
-                `y = ${vertexFormStr}`
-            ]
-        });
-    },
-
-    // =====================================================
-    // DISCRIMINANT QUESTION GENERATORS
-    // =====================================================
-
-    /**
-     * Generate discriminant calculation question
-     */
-    generateDiscriminant(quadratic, difficultyId) {
-        const D = quadratic.getDiscriminant();
-        
-        return new Question({
-            type: 'discriminant',
-            category: 'roots',
-            difficulty: 3,
-            quadratic: quadratic,
-            questionText: 'Calculate the discriminant (D = b² - 4ac) of this quadratic equation.',
-            answerFormat: 'D = ?',
-            inputType: 'value',
-            correctAnswer: D,
-            hints: [
-                { 
-                    text: 'The discriminant formula is D = b² - 4ac.',
-                    formula: 'D = b² - 4ac'
-                },
-                { text: `Here: a = ${quadratic.a}, b = ${quadratic.b}, c = ${quadratic.c}` }
-            ],
-            explanation: `D = b² - 4ac = (${quadratic.b})² - 4(${quadratic.a})(${quadratic.c}) = ${QuadraticUtils.formatNumber(D)}`,
+            explanation: `${quadratic.getEquation()} = ${vertexFormStr}. So a = ${a}, h = ${QuadraticUtils.formatNumber(h)}, k = ${QuadraticUtils.formatNumber(k)}`,
             steps: [
-                `a = ${quadratic.a}, b = ${quadratic.b}, c = ${quadratic.c}`,
-                `D = b² - 4ac`,
-                `D = (${quadratic.b})² - 4(${quadratic.a})(${quadratic.c})`,
-                `D = ${quadratic.b * quadratic.b} - ${4 * quadratic.a * quadratic.c}`,
-                `D = ${QuadraticUtils.formatNumber(D)}`
+                `y = ${quadratic.getStandardForm()}`,
+                `y = ${vertexFormStr}`,
+                `a = ${a}, h = ${QuadraticUtils.formatNumber(h)}, k = ${QuadraticUtils.formatNumber(k)}`
             ]
         });
     },
 
     /**
-     * Generate nature of roots question
-     */
-    generateNatureOfRoots(quadratic, difficultyId) {
-        const D = quadratic.getDiscriminant();
-        const nature = quadratic.getNatureOfRoots();
-        
-        return new Question({
-            type: 'nature_of_roots',
-            category: 'roots',
-            difficulty: 3,
-            quadratic: quadratic,
-            questionText: 'Determine the nature of the roots of this quadratic equation.',
-            inputType: 'multiple_choice',
-            correctAnswer: nature.description,
-            correctChoiceIndex: nature.type === 'two_distinct' ? 0 : (nature.type === 'equal' ? 1 : 2),
-            choices: [
-                'Two distinct real roots',
-                'Two equal real roots (repeated root)',
-                'No real roots'
-            ],
-            hints: [
-                { 
-                    text: 'First calculate the discriminant D = b² - 4ac.',
-                    formula: 'D = b² - 4ac'
-                },
-                { text: 'D > 0: two distinct roots, D = 0: equal roots, D < 0: no real roots' }
-            ],
-            explanation: `D = ${QuadraticUtils.formatNumber(D)}. Since D ${D > 0 ? '> 0' : (D === 0 ? '= 0' : '< 0')}, there are ${nature.description.toLowerCase()}.`,
-            steps: [
-                `Calculate D = b² - 4ac`,
-                `D = (${quadratic.b})² - 4(${quadratic.a})(${quadratic.c}) = ${QuadraticUtils.formatNumber(D)}`,
-                `D ${D > 0 ? '> 0' : (D === 0 ? '= 0' : '< 0')}`,
-                `Therefore: ${nature.description}`
-            ]
-        });
-    },
-
-    // =====================================================
-    // INTERSECTION QUESTION GENERATORS
-    // =====================================================
-
-    /**
-     * Generate line-parabola intersection question
+     * Line intersection
      */
     generateLineIntersection(quadratic, difficultyId) {
-        // Generate a line that intersects the parabola
-        const vertex = quadratic.getTurningPoint();
+        // Create a line that intersects the parabola at nice points
+        const r1 = QuadraticGenerator.randomInt(-3, 3);
+        const r2 = QuadraticGenerator.randomInt(-3, 3);
         
-        // Create a line that passes near the vertex
-        const m = Math.floor(Math.random() * 5) - 2; // slope between -2 and 2
-        const c = Math.floor(vertex.y + Math.random() * 6 - 3); // intercept near vertex y
+        const y1 = quadratic.evaluate(r1);
+        const y2 = quadratic.evaluate(r2);
+        
+        // Line through (r1, y1) and (r2, y2)
+        let m, c;
+        if (r1 !== r2) {
+            m = (y2 - y1) / (r2 - r1);
+            c = y1 - m * r1;
+        } else {
+            // Horizontal line
+            m = 0;
+            c = y1;
+        }
         
         const line = new Line(m, c);
         const intersections = quadratic.getLineIntersection(m, c);
-        
-        // Ensure we have intersections
-        let finalLine = line;
-        let finalIntersections = intersections;
-        
-        if (intersections.length === 0) {
-            // Adjust line to ensure intersection
-            const newC = vertex.y - m * vertex.x;
-            finalLine = new Line(m, newC);
-            finalIntersections = quadratic.getLineIntersection(m, newC);
-        }
         
         return new Question({
             type: 'line_intersection',
             category: 'intersection',
             difficulty: 5,
             quadratic: quadratic,
-            line: finalLine,
-            questionText: `Find the coordinates where the line ${finalLine.getEquation()} intersects the parabola.`,
-            answerFormat: '(x₁, y₁), (x₂, y₂)',
+            line: line,
+            questionText: `Find where ${quadratic.getEquation()} meets the line ${line.getEquation()}.`,
+            answerFormat: '(x₁, y₁) and (x₂, y₂)',
             inputType: 'coordinates',
-            correctAnswer: finalIntersections,
+            correctAnswer: intersections,
             hints: [
                 { text: 'Set the two equations equal to each other.' },
-                { text: 'Rearrange to get a quadratic equation and solve for x.' },
-                { text: 'Substitute x values back to find y coordinates.' }
+                { text: 'Rearrange to form a quadratic and solve.' }
             ],
-            explanation: finalIntersections.length > 0 
-                ? `The intersection points are ${finalIntersections.map(p => QuadraticUtils.formatCoordinate(p)).join(' and ')}.`
-                : 'The line does not intersect the parabola.',
+            explanation: `Intersection points: ${intersections.map(p => `(${QuadraticUtils.formatNumber(p.x)}, ${QuadraticUtils.formatNumber(p.y)})`).join(' and ')}`,
             steps: [
-                `Set ${quadratic.getStandardForm()} = ${finalLine.m}x + ${finalLine.c}`,
-                `${quadratic.a}x² + ${quadratic.b - finalLine.m}x + ${quadratic.c - finalLine.c} = 0`,
-                'Solve this quadratic for x',
-                ...finalIntersections.map((p, i) => 
-                    `Point ${i + 1}: (${QuadraticUtils.formatNumber(p.x)}, ${QuadraticUtils.formatNumber(p.y)})`
-                )
+                `Set ${quadratic.getStandardForm()} = ${m}x + ${c}`,
+                `Solve the resulting equation`,
+                ...intersections.map((p, i) => `Point ${i + 1}: (${QuadraticUtils.formatNumber(p.x)}, ${QuadraticUtils.formatNumber(p.y)})`)
             ]
         });
     },
 
     /**
-     * Generate find coordinates question
+     * Find coordinates on curve
      */
     generateFindCoordinates(quadratic, difficultyId) {
-        // Random x value within reasonable range
-        const x = Math.floor(Math.random() * 9) - 4;
+        const x = QuadraticGenerator.randomInt(-5, 5);
         const y = quadratic.evaluate(x);
         
-        const askForY = Math.random() < 0.5;
-        
-        if (askForY) {
-            return new Question({
-                type: 'find_coordinates',
-                category: 'coordinates',
-                difficulty: 3,
-                quadratic: quadratic,
-                questionText: `Find the y-coordinate when x = ${x}.`,
-                answerFormat: 'y = ?',
-                inputType: 'value',
-                correctAnswer: y,
-                hints: [
-                    { text: `Substitute x = ${x} into the equation.` },
-                    { text: `Calculate ${quadratic.a}(${x})² + ${quadratic.b}(${x}) + ${quadratic.c}` }
-                ],
-                explanation: `When x = ${x}, y = ${quadratic.a}(${x})² + ${quadratic.b}(${x}) + ${quadratic.c} = ${QuadraticUtils.formatNumber(y)}`,
-                steps: [
-                    `y = ${quadratic.a}(${x})² + ${quadratic.b}(${x}) + ${quadratic.c}`,
-                    `y = ${quadratic.a * x * x} + ${quadratic.b * x} + ${quadratic.c}`,
-                    `y = ${QuadraticUtils.formatNumber(y)}`
-                ]
-            });
-        } else {
-            const xValues = quadratic.findX(y);
-            
-            return new Question({
-                type: 'find_coordinates',
-                category: 'coordinates',
-                difficulty: 4,
-                quadratic: quadratic,
-                questionText: `Find the x-coordinate(s) when y = ${QuadraticUtils.formatNumber(y)}.`,
-                answerFormat: xValues.length > 1 ? 'x = ?, ?' : 'x = ?',
-                inputType: 'values',
-                correctAnswer: xValues,
-                hints: [
-                    { text: `Set ${quadratic.getStandardForm()} = ${QuadraticUtils.formatNumber(y)}` },
-                    { text: 'Solve the resulting quadratic equation.' }
-                ],
-                explanation: `When y = ${QuadraticUtils.formatNumber(y)}, x = ${xValues.map(v => QuadraticUtils.formatNumber(v)).join(' or x = ')}`,
-                steps: [
-                    `${quadratic.getStandardForm()} = ${QuadraticUtils.formatNumber(y)}`,
-                    `${quadratic.a}x² + ${quadratic.b}x + ${quadratic.c - y} = 0`,
-                    'Solve for x',
-                    `x = ${xValues.map(v => QuadraticUtils.formatNumber(v)).join(' or x = ')}`
-                ]
-            });
-        }
+        return new Question({
+            type: 'find_coordinates',
+            category: 'coordinates',
+            difficulty: 3,
+            quadratic: quadratic,
+            questionText: `Find the y-coordinate when x = ${x} for ${quadratic.getEquation()}.`,
+            answerFormat: 'y = ?',
+            inputType: 'value',
+            correctAnswer: y,
+            hints: [
+                { text: `Substitute x = ${x} into the equation.` }
+            ],
+            explanation: `When x = ${x}, y = ${y}`,
+            steps: [
+                `y = ${quadratic.a}(${x})² + ${quadratic.b}(${x}) + ${quadratic.c}`,
+                `y = ${quadratic.a * x * x} + ${quadratic.b * x} + ${quadratic.c}`,
+                `y = ${y}`
+            ]
+        });
     },
 
-    // =====================================================
-    // RANGE QUESTION GENERATOR
-    // =====================================================
-
     /**
-     * Generate range of values question
+     * Range of values
      */
     generateRangeOfValues(quadratic, difficultyId) {
         const range = quadratic.getRange();
@@ -922,129 +992,26 @@ const QuestionGenerator = {
             category: 'range',
             difficulty: 4,
             quadratic: quadratic,
-            questionText: 'State the range of values of y for this quadratic function.',
+            questionText: `State the range of ${quadratic.getEquation()}.`,
             answerFormat: 'y ≥ ? or y ≤ ?',
             inputType: 'inequality',
             correctAnswer: range,
             hints: [
-                { text: `This parabola opens ${quadratic.getDirection()}, so it has a ${quadratic.getExtremumType()}.` },
-                { text: 'Find the y-coordinate of the turning point.' },
-                { text: range.inequality === 'gte' ? 'y is greater than or equal to the minimum value.' : 'y is less than or equal to the maximum value.' }
+                { text: 'Find the turning point first.' },
+                { text: `This parabola has a ${quadratic.getExtremumType()}.` }
             ],
-            explanation: `Since the parabola opens ${quadratic.getDirection()}, ${range.description}.`,
+            explanation: range.description,
             steps: [
-                `a = ${quadratic.a} ${quadratic.a > 0 ? '> 0' : '< 0'} → ${quadratic.getExtremumType()}`,
-                `${quadratic.getExtremumType()} value = ${QuadraticUtils.formatNumber(range.value)}`,
+                `The parabola has a ${quadratic.getExtremumType()} at y = ${QuadraticUtils.formatNumber(range.value)}`,
                 `Range: ${range.description}`
             ]
         });
     },
 
-    // =====================================================
-    // SKETCHING QUESTION GENERATORS
-    // =====================================================
-
-    /**
-     * Generate sketch from equation question
-     */
-    generateSketchFromEquation(quadratic, difficultyId) {
-        const vertex = quadratic.getTurningPoint();
-        const yInt = quadratic.getYIntercept();
-        const xInts = quadratic.getXIntercepts();
-        const direction = quadratic.getDirection();
-        
-        return new Question({
-            type: 'sketch_from_equation',
-            category: 'sketching',
-            difficulty: 4,
-            quadratic: quadratic,
-            questionText: 'Identify all key features needed to sketch this parabola.',
-            inputType: 'multiple_features',
-            correctAnswer: {
-                direction: direction,
-                vertex: vertex,
-                yIntercept: yInt,
-                xIntercepts: xInts
-            },
-            choices: [
-                `Direction: Opens ${direction}`,
-                `Vertex: ${QuadraticUtils.formatCoordinate(vertex)}`,
-                `Y-intercept: (0, ${QuadraticUtils.formatNumber(yInt)})`,
-                `X-intercepts: ${xInts.length > 0 ? xInts.map(x => QuadraticUtils.formatNumber(x)).join(', ') : 'None'}`
-            ],
-            hints: [
-                { text: 'Check the sign of "a" to determine direction.' },
-                { text: 'Find the vertex using x = -b/(2a).' },
-                { text: 'The y-intercept is the value of c.' },
-                { text: 'Find x-intercepts by solving when y = 0.' }
-            ],
-            explanation: `Key features: Opens ${direction}, vertex at ${QuadraticUtils.formatCoordinate(vertex)}, ` +
-                        `y-intercept at (0, ${yInt}), ` +
-                        `${xInts.length > 0 ? `x-intercepts at x = ${xInts.join(', ')}` : 'no x-intercepts'}.`,
-            steps: [
-                `a = ${quadratic.a} → opens ${direction}`,
-                `Vertex: (${QuadraticUtils.formatNumber(vertex.x)}, ${QuadraticUtils.formatNumber(vertex.y)})`,
-                `Y-intercept: c = ${yInt}`,
-                xInts.length > 0 
-                    ? `X-intercepts: ${xInts.map(x => `x = ${QuadraticUtils.formatNumber(x)}`).join(', ')}`
-                    : 'No real x-intercepts (D < 0)'
-            ]
-        });
-    },
-
-    /**
-     * Generate sketch from properties question
-     */
-    generateSketchFromProperties(quadratic, difficultyId) {
-        const vertex = quadratic.getTurningPoint();
-        const direction = quadratic.getDirection();
-        
-        // Generate wrong options
-        const options = [quadratic];
-        
-        // Create similar but different quadratics
-        const variations = [
-            new Quadratic(-quadratic.a, quadratic.b, quadratic.c), // Flipped
-            new Quadratic(quadratic.a, -quadratic.b, quadratic.c), // Different symmetry
-            new Quadratic(quadratic.a, quadratic.b, quadratic.c + 3) // Shifted
-        ];
-        
-        variations.forEach(v => {
-            if (options.length < 4) {
-                options.push(v);
-            }
-        });
-        
-        const shuffled = this.shuffleArray([...options]);
-        const correctIndex = shuffled.indexOf(quadratic);
-        
-        return new Question({
-            type: 'sketch_from_properties',
-            category: 'sketching',
-            difficulty: 4,
-            quadratic: quadratic,
-            questionText: `Which equation has a ${quadratic.getExtremumType()} point at ${QuadraticUtils.formatCoordinate(vertex)}?`,
-            inputType: 'multiple_choice',
-            correctAnswer: quadratic.getEquation(),
-            correctChoiceIndex: correctIndex,
-            choices: shuffled.map(q => q.getEquation()),
-            hints: [
-                { text: `Check which parabola opens ${direction} (has a ${quadratic.getExtremumType()}).` },
-                { text: 'Verify the vertex coordinates for each option.' }
-            ],
-            explanation: `${quadratic.getEquation()} has its ${quadratic.getExtremumType()} at ${QuadraticUtils.formatCoordinate(vertex)}.`
-        });
-    },
-
-    // =====================================================
+    // =========================================================
     // UTILITY METHODS
-    // =====================================================
+    // =========================================================
 
-    /**
-     * Shuffle an array
-     * @param {Array} array 
-     * @returns {Array} Shuffled array
-     */
     shuffleArray(array) {
         const shuffled = [...array];
         for (let i = shuffled.length - 1; i > 0; i--) {
@@ -1056,40 +1023,31 @@ const QuestionGenerator = {
 
     /**
      * Generate a set of questions for a level
-     * @param {string} difficultyId - Difficulty level
-     * @param {number} count - Number of questions
-     * @returns {Array<Question>}
      */
     generateQuestionSet(difficultyId, count) {
-        const questions = [];
-        const difficultyConfig = CONFIG.difficulty[difficultyId];
-        const topics = [...difficultyConfig.topics];
+        const config = CONFIG.difficulty[difficultyId];
+        if (!config) return [];
         
-        // Ensure variety by cycling through topics
+        const questions = [];
+        const topics = [...config.topics];
+        
         for (let i = 0; i < count; i++) {
             const topicIndex = i % topics.length;
             const topic = topics[topicIndex];
             
-            // Generate quadratic suitable for this topic
             const quadratic = QuadraticGenerator.generateForQuestionType(topic, difficultyId);
-            
-            // Generate question
             const question = this.generateByType(topic, quadratic, difficultyId);
-            questions.push(question);
+            
+            if (question) {
+                questions.push(question);
+            }
         }
         
-        // Shuffle questions
         return this.shuffleArray(questions);
     }
 };
 
-// =====================================================
-// EXPORT
-// =====================================================
-
+// Export
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = {
-        Question,
-        QuestionGenerator
-    };
+    module.exports = { Question, QuestionGenerator, QuadraticGenerator };
 }
