@@ -2,79 +2,56 @@
    QUADRATIC CATAPULT QUEST - QUADRATIC MATH ENGINE
    =====================================================
    Core mathematical functions for quadratic equations
+   CORRECTED: Flexible answer validation
    ===================================================== */
 
 /**
  * Quadratic Class
- * Represents a quadratic equation in the form y = ax² + bx + c
+ * Represents y = ax² + bx + c
  */
 class Quadratic {
-    /**
-     * Create a new Quadratic
-     * @param {number} a - Coefficient of x²
-     * @param {number} b - Coefficient of x
-     * @param {number} c - Constant term
-     */
     constructor(a, b, c) {
         if (a === 0) {
-            throw new Error('Coefficient "a" cannot be zero for a quadratic equation');
+            throw new Error('Coefficient "a" cannot be zero');
         }
         this.a = a;
         this.b = b;
         this.c = c;
-        
-        // Cache computed values
         this._cache = {};
     }
 
     // =====================================================
-    // BASIC PROPERTIES
+    // EVALUATION
     // =====================================================
-
-    /**
-     * Evaluate y for a given x value
-     * @param {number} x - The x value
-     * @returns {number} The corresponding y value
-     */
+    
     evaluate(x) {
         return this.a * x * x + this.b * x + this.c;
     }
 
-    /**
-     * Alias for evaluate
-     */
     f(x) {
         return this.evaluate(x);
     }
 
-    /**
-     * Get the y-intercept (where x = 0)
-     * @returns {number} The y-intercept value
-     */
+    // =====================================================
+    // Y-INTERCEPT
+    // =====================================================
+    
     getYIntercept() {
         return this.c;
     }
 
-    /**
-     * Get the y-intercept as a coordinate point
-     * @returns {Object} Point object {x, y}
-     */
     getYInterceptPoint() {
         return { x: 0, y: this.c };
     }
 
-    /**
-     * Determine if parabola opens upward or downward
-     * @returns {string} 'upward' or 'downward'
-     */
+    // =====================================================
+    // DIRECTION
+    // =====================================================
+    
     getDirection() {
         return this.a > 0 ? 'upward' : 'downward';
     }
 
-    /**
-     * Check if the parabola has a minimum or maximum
-     * @returns {string} 'minimum' or 'maximum'
-     */
     getExtremumType() {
         return this.a > 0 ? 'minimum' : 'maximum';
     }
@@ -82,12 +59,7 @@ class Quadratic {
     // =====================================================
     // LINE OF SYMMETRY
     // =====================================================
-
-    /**
-     * Calculate the line of symmetry (axis of symmetry)
-     * Formula: x = -b / (2a)
-     * @returns {number} The x-value of the line of symmetry
-     */
+    
     getLineOfSymmetry() {
         if (this._cache.lineOfSymmetry === undefined) {
             this._cache.lineOfSymmetry = -this.b / (2 * this.a);
@@ -95,10 +67,6 @@ class Quadratic {
         return this._cache.lineOfSymmetry;
     }
 
-    /**
-     * Get line of symmetry as equation string
-     * @returns {string} e.g., "x = 2"
-     */
     getLineOfSymmetryEquation() {
         const x = this.getLineOfSymmetry();
         return `x = ${QuadraticUtils.formatNumber(x)}`;
@@ -107,11 +75,7 @@ class Quadratic {
     // =====================================================
     // TURNING POINT (VERTEX)
     // =====================================================
-
-    /**
-     * Calculate the turning point (vertex)
-     * @returns {Object} Point object {x, y}
-     */
+    
     getTurningPoint() {
         if (this._cache.turningPoint === undefined) {
             const x = this.getLineOfSymmetry();
@@ -121,17 +85,10 @@ class Quadratic {
         return { ...this._cache.turningPoint };
     }
 
-    /**
-     * Alias for getTurningPoint
-     */
     getVertex() {
         return this.getTurningPoint();
     }
 
-    /**
-     * Get the maximum or minimum y-value
-     * @returns {number} The extremum y-value
-     */
     getExtremumValue() {
         return this.getTurningPoint().y;
     }
@@ -139,12 +96,7 @@ class Quadratic {
     // =====================================================
     // DISCRIMINANT AND ROOTS
     // =====================================================
-
-    /**
-     * Calculate the discriminant
-     * Formula: D = b² - 4ac
-     * @returns {number} The discriminant value
-     */
+    
     getDiscriminant() {
         if (this._cache.discriminant === undefined) {
             this._cache.discriminant = this.b * this.b - 4 * this.a * this.c;
@@ -152,23 +104,20 @@ class Quadratic {
         return this._cache.discriminant;
     }
 
-    /**
-     * Determine the nature of roots based on discriminant
-     * @returns {Object} {type: string, description: string, count: number}
-     */
     getNatureOfRoots() {
         const D = this.getDiscriminant();
+        const epsilon = 0.0001;
         
-        if (D > MATH_CONSTANTS.EPSILON) {
+        if (D > epsilon) {
             return {
                 type: 'two_distinct',
-                description: 'Two distinct real roots',
+                description: 'Two different real roots',
                 count: 2
             };
-        } else if (Math.abs(D) <= MATH_CONSTANTS.EPSILON) {
+        } else if (Math.abs(D) <= epsilon) {
             return {
                 type: 'equal',
-                description: 'Two equal real roots (repeated root)',
+                description: 'Two equal real roots',
                 count: 1
             };
         } else {
@@ -180,90 +129,58 @@ class Quadratic {
         }
     }
 
-    /**
-     * Calculate the x-intercepts (roots)
-     * Uses quadratic formula: x = (-b ± √(b²-4ac)) / (2a)
-     * @returns {Array} Array of x-intercept values, empty if no real roots
-     */
     getXIntercepts() {
         if (this._cache.xIntercepts === undefined) {
             const D = this.getDiscriminant();
+            const epsilon = 0.0001;
             
-            if (D < -MATH_CONSTANTS.EPSILON) {
+            if (D < -epsilon) {
                 this._cache.xIntercepts = [];
-            } else if (Math.abs(D) <= MATH_CONSTANTS.EPSILON) {
+            } else if (Math.abs(D) <= epsilon) {
                 const x = -this.b / (2 * this.a);
                 this._cache.xIntercepts = [x];
             } else {
                 const sqrtD = Math.sqrt(D);
                 const x1 = (-this.b + sqrtD) / (2 * this.a);
                 const x2 = (-this.b - sqrtD) / (2 * this.a);
-                // Sort in ascending order
                 this._cache.xIntercepts = x1 < x2 ? [x1, x2] : [x2, x1];
             }
         }
         return [...this._cache.xIntercepts];
     }
 
-    /**
-     * Get x-intercepts as coordinate points
-     * @returns {Array} Array of point objects {x, y}
-     */
     getXInterceptPoints() {
         return this.getXIntercepts().map(x => ({ x, y: 0 }));
     }
 
-    /**
-     * Check if the quadratic can be factored with integer roots
-     * @returns {boolean}
-     */
     hasIntegerRoots() {
         const roots = this.getXIntercepts();
-        return roots.every(r => Number.isInteger(r) || Math.abs(r - Math.round(r)) < MATH_CONSTANTS.EPSILON);
+        if (roots.length === 0) return false;
+        return roots.every(r => Math.abs(r - Math.round(r)) < 0.0001);
     }
 
-    /**
-     * Get the factored form if possible
-     * @returns {string|null} Factored form or null if not factorable
-     */
     getFactoredForm() {
         const roots = this.getXIntercepts();
+        if (roots.length === 0) return null;
+        if (!this.hasIntegerRoots()) return null;
         
-        if (roots.length === 0) {
-            return null;
-        }
+        const r1 = Math.round(roots[0]);
+        const r2 = roots.length > 1 ? Math.round(roots[1]) : r1;
+        
+        const f1 = r1 >= 0 ? `(x - ${r1})` : `(x + ${-r1})`;
+        const f2 = r2 >= 0 ? `(x - ${r2})` : `(x + ${-r2})`;
         
         if (roots.length === 1) {
-            const r = roots[0];
-            if (this.a === 1) {
-                return `(x ${QuadraticUtils.formatSignedNumber(-r)})²`;
-            } else {
-                return `${this.a}(x ${QuadraticUtils.formatSignedNumber(-r)})²`;
-            }
+            return this.a === 1 ? `${f1}²` : `${this.a}${f1}²`;
         }
         
-        const [r1, r2] = roots;
-        
-        // Check if roots are nice numbers
-        if (!this.hasIntegerRoots() && !QuadraticUtils.areNiceDecimals(roots)) {
-            return null;
-        }
-        
-        if (this.a === 1) {
-            return `(x ${QuadraticUtils.formatSignedNumber(-r1)})(x ${QuadraticUtils.formatSignedNumber(-r2)})`;
-        } else {
-            return `${this.a}(x ${QuadraticUtils.formatSignedNumber(-r1)})(x ${QuadraticUtils.formatSignedNumber(-r2)})`;
-        }
+        return this.a === 1 ? `${f1}${f2}` : `${this.a}${f1}${f2}`;
     }
 
     // =====================================================
-    // COMPLETING THE SQUARE (VERTEX FORM)
+    // VERTEX FORM
     // =====================================================
-
-    /**
-     * Convert to vertex form: a(x - h)² + k
-     * @returns {Object} {a, h, k} coefficients for vertex form
-     */
+    
     getVertexFormCoefficients() {
         if (this._cache.vertexForm === undefined) {
             const h = -this.b / (2 * this.a);
@@ -273,34 +190,29 @@ class Quadratic {
         return { ...this._cache.vertexForm };
     }
 
-    /**
-     * Get the vertex form as a string
-     * @returns {string} e.g., "2(x - 3)² + 5"
-     */
     getVertexFormString() {
         const { a, h, k } = this.getVertexFormCoefficients();
         
         let str = '';
         
-        // Coefficient a
-        if (a === 1) {
-            str = '';
-        } else if (a === -1) {
-            str = '-';
-        } else {
-            str = `${QuadraticUtils.formatNumber(a)}`;
-        }
+        if (a === 1) str = '';
+        else if (a === -1) str = '-';
+        else str = `${QuadraticUtils.formatNumber(a)}`;
         
-        // (x - h)² part
-        if (Math.abs(h) < MATH_CONSTANTS.EPSILON) {
+        if (Math.abs(h) < 0.0001) {
             str += 'x²';
+        } else if (h > 0) {
+            str += `(x - ${QuadraticUtils.formatNumber(h)})²`;
         } else {
-            str += `(x ${QuadraticUtils.formatSignedNumber(-h)})²`;
+            str += `(x + ${QuadraticUtils.formatNumber(-h)})²`;
         }
         
-        // + k part
-        if (Math.abs(k) >= MATH_CONSTANTS.EPSILON) {
-            str += ` ${QuadraticUtils.formatSignedNumber(k, true)}`;
+        if (Math.abs(k) >= 0.0001) {
+            if (k > 0) {
+                str += ` + ${QuadraticUtils.formatNumber(k)}`;
+            } else {
+                str += ` - ${QuadraticUtils.formatNumber(-k)}`;
+            }
         }
         
         return str;
@@ -309,11 +221,7 @@ class Quadratic {
     // =====================================================
     // RANGE
     // =====================================================
-
-    /**
-     * Get the range of the quadratic function
-     * @returns {Object} {min: number|null, max: number|null, description: string}
-     */
+    
     getRange() {
         const vertex = this.getTurningPoint();
         
@@ -337,33 +245,16 @@ class Quadratic {
     }
 
     // =====================================================
-    // FINDING COORDINATES
+    // FIND X GIVEN Y
     // =====================================================
-
-    /**
-     * Find y-value(s) for a given x
-     * @param {number} x - The x value
-     * @returns {number} The y value
-     */
-    findY(x) {
-        return this.evaluate(x);
-    }
-
-    /**
-     * Find x-value(s) for a given y
-     * Solves ax² + bx + (c - y) = 0
-     * @param {number} y - The y value
-     * @returns {Array} Array of x values
-     */
+    
     findX(y) {
-        // ax² + bx + c = y
-        // ax² + bx + (c - y) = 0
         const newC = this.c - y;
         const D = this.b * this.b - 4 * this.a * newC;
         
-        if (D < -MATH_CONSTANTS.EPSILON) {
+        if (D < -0.0001) {
             return [];
-        } else if (Math.abs(D) <= MATH_CONSTANTS.EPSILON) {
+        } else if (Math.abs(D) <= 0.0001) {
             return [-this.b / (2 * this.a)];
         } else {
             const sqrtD = Math.sqrt(D);
@@ -376,24 +267,15 @@ class Quadratic {
     // =====================================================
     // LINE INTERSECTION
     // =====================================================
-
-    /**
-     * Find intersection points with a line y = mx + c
-     * @param {number} m - Slope of the line
-     * @param {number} c - Y-intercept of the line
-     * @returns {Array} Array of intersection points {x, y}
-     */
+    
     getLineIntersection(m, lineC) {
-        // ax² + bx + c = mx + lineC
-        // ax² + (b - m)x + (c - lineC) = 0
         const newB = this.b - m;
         const newC = this.c - lineC;
-        
         const D = newB * newB - 4 * this.a * newC;
         
-        if (D < -MATH_CONSTANTS.EPSILON) {
+        if (D < -0.0001) {
             return [];
-        } else if (Math.abs(D) <= MATH_CONSTANTS.EPSILON) {
+        } else if (Math.abs(D) <= 0.0001) {
             const x = -newB / (2 * this.a);
             const y = m * x + lineC;
             return [{ x, y }];
@@ -407,250 +289,60 @@ class Quadratic {
                 { x: x2, y: m * x2 + lineC }
             ];
             
-            // Sort by x-coordinate
             return points.sort((a, b) => a.x - b.x);
         }
-    }
-
-    /**
-     * Find intersection with a vertical line x = k
-     * @param {number} k - The x value
-     * @returns {Object} Point {x, y}
-     */
-    getVerticalLineIntersection(k) {
-        return { x: k, y: this.evaluate(k) };
-    }
-
-    /**
-     * Find intersection with a horizontal line y = k
-     * @param {number} k - The y value
-     * @returns {Array} Array of points {x, y}
-     */
-    getHorizontalLineIntersection(k) {
-        const xValues = this.findX(k);
-        return xValues.map(x => ({ x, y: k }));
-    }
-
-    /**
-     * Check if a line is tangent to the parabola
-     * @param {number} m - Slope of the line
-     * @param {number} c - Y-intercept of the line
-     * @returns {boolean}
-     */
-    isLineTangent(m, c) {
-        const newB = this.b - m;
-        const newC = this.c - c;
-        const D = newB * newB - 4 * this.a * newC;
-        return Math.abs(D) <= MATH_CONSTANTS.EPSILON;
-    }
-
-    /**
-     * Find the tangent line at a given x-value
-     * @param {number} x0 - The x value
-     * @returns {Object} {m: slope, c: y-intercept}
-     */
-    getTangentAt(x0) {
-        // Derivative: dy/dx = 2ax + b
-        const m = 2 * this.a * x0 + this.b;
-        const y0 = this.evaluate(x0);
-        // y - y0 = m(x - x0)
-        // y = mx - mx0 + y0
-        const c = y0 - m * x0;
-        return { m, c };
     }
 
     // =====================================================
     // STRING REPRESENTATIONS
     // =====================================================
-
-    /**
-     * Get standard form string: ax² + bx + c
-     * @returns {string}
-     */
+    
     getStandardForm() {
         let str = '';
         
         // ax² term
-        if (this.a === 1) {
-            str = 'x²';
-        } else if (this.a === -1) {
-            str = '-x²';
-        } else {
-            str = `${QuadraticUtils.formatNumber(this.a)}x²`;
-        }
+        if (this.a === 1) str = 'x²';
+        else if (this.a === -1) str = '-x²';
+        else str = `${this.a}x²`;
         
         // bx term
         if (this.b !== 0) {
-            if (this.b === 1) {
-                str += ' + x';
-            } else if (this.b === -1) {
-                str += ' - x';
-            } else if (this.b > 0) {
-                str += ` + ${QuadraticUtils.formatNumber(this.b)}x`;
-            } else {
-                str += ` - ${QuadraticUtils.formatNumber(Math.abs(this.b))}x`;
-            }
+            if (this.b === 1) str += ' + x';
+            else if (this.b === -1) str += ' - x';
+            else if (this.b > 0) str += ` + ${this.b}x`;
+            else str += ` - ${-this.b}x`;
         }
         
         // c term
         if (this.c !== 0) {
-            if (this.c > 0) {
-                str += ` + ${QuadraticUtils.formatNumber(this.c)}`;
-            } else {
-                str += ` - ${QuadraticUtils.formatNumber(Math.abs(this.c))}`;
-            }
+            if (this.c > 0) str += ` + ${this.c}`;
+            else str += ` - ${-this.c}`;
         }
         
         return str;
     }
 
-    /**
-     * Get equation string with y = prefix
-     * @returns {string}
-     */
     getEquation() {
         return `y = ${this.getStandardForm()}`;
     }
 
-    /**
-     * Get equation in a specified form
-     * @param {string} form - 'standard', 'vertex', 'factored'
-     * @returns {string}
-     */
-    getEquationForm(form) {
-        switch (form) {
-            case 'vertex':
-                return `y = ${this.getVertexFormString()}`;
-            case 'factored':
-                const factored = this.getFactoredForm();
-                return factored ? `y = ${factored}` : null;
-            case 'standard':
-            default:
-                return this.getEquation();
-        }
-    }
-
-    /**
-     * Convert to string (alias for getEquation)
-     * @returns {string}
-     */
     toString() {
         return this.getEquation();
     }
 
     // =====================================================
-    // POINT GENERATION FOR GRAPHING
-    // =====================================================
-
-    /**
-     * Generate points for plotting the curve
-     * @param {number} xMin - Minimum x value
-     * @param {number} xMax - Maximum x value
-     * @param {number} numPoints - Number of points to generate
-     * @returns {Array} Array of {x, y} points
-     */
-    generatePoints(xMin, xMax, numPoints = 200) {
-        const points = [];
-        const step = (xMax - xMin) / (numPoints - 1);
-        
-        for (let i = 0; i < numPoints; i++) {
-            const x = xMin + i * step;
-            const y = this.evaluate(x);
-            points.push({ x, y });
-        }
-        
-        return points;
-    }
-
-    /**
-     * Get key points for graphing (intercepts, vertex)
-     * @returns {Object} Object containing key points
-     */
-    getKeyPoints() {
-        return {
-            vertex: this.getTurningPoint(),
-            yIntercept: this.getYInterceptPoint(),
-            xIntercepts: this.getXInterceptPoints(),
-            lineOfSymmetry: this.getLineOfSymmetry()
-        };
-    }
-
-    // =====================================================
-    // VALIDATION
-    // =====================================================
-
-    /**
-     * Check if a point lies on the parabola
-     * @param {number} x - X coordinate
-     * @param {number} y - Y coordinate
-     * @param {number} tolerance - Allowed error
-     * @returns {boolean}
-     */
-    containsPoint(x, y, tolerance = MATH_CONSTANTS.EPSILON) {
-        const expectedY = this.evaluate(x);
-        return Math.abs(y - expectedY) <= tolerance;
-    }
-
-    /**
-     * Create a copy of this quadratic
-     * @returns {Quadratic}
-     */
-    clone() {
-        return new Quadratic(this.a, this.b, this.c);
-    }
-
-    // =====================================================
     // STATIC FACTORY METHODS
     // =====================================================
-
-    /**
-     * Create quadratic from vertex form: a(x - h)² + k
-     * @param {number} a - Leading coefficient
-     * @param {number} h - X-coordinate of vertex
-     * @param {number} k - Y-coordinate of vertex
-     * @returns {Quadratic}
-     */
+    
     static fromVertexForm(a, h, k) {
-        // a(x - h)² + k = ax² - 2ahx + ah² + k
         const b = -2 * a * h;
         const c = a * h * h + k;
         return new Quadratic(a, b, c);
     }
 
-    /**
-     * Create quadratic from roots: a(x - r1)(x - r2)
-     * @param {number} a - Leading coefficient
-     * @param {number} r1 - First root
-     * @param {number} r2 - Second root
-     * @returns {Quadratic}
-     */
     static fromRoots(a, r1, r2) {
-        // a(x - r1)(x - r2) = a(x² - (r1+r2)x + r1*r2)
         const b = -a * (r1 + r2);
         const c = a * r1 * r2;
-        return new Quadratic(a, b, c);
-    }
-
-    /**
-     * Create quadratic from three points
-     * @param {Object} p1 - Point {x, y}
-     * @param {Object} p2 - Point {x, y}
-     * @param {Object} p3 - Point {x, y}
-     * @returns {Quadratic}
-     */
-    static fromThreePoints(p1, p2, p3) {
-        // Solve system of equations
-        const { x: x1, y: y1 } = p1;
-        const { x: x2, y: y2 } = p2;
-        const { x: x3, y: y3 } = p3;
-        
-        // Using Lagrange interpolation or matrix method
-        const denom = (x1 - x2) * (x1 - x3) * (x2 - x3);
-        
-        const a = (x3 * (y2 - y1) + x2 * (y1 - y3) + x1 * (y3 - y2)) / denom;
-        const b = (x3 * x3 * (y1 - y2) + x2 * x2 * (y3 - y1) + x1 * x1 * (y2 - y3)) / denom;
-        const c = (x2 * x3 * (x2 - x3) * y1 + x3 * x1 * (x3 - x1) * y2 + x1 * x2 * (x1 - x2) * y3) / denom;
-        
         return new Quadratic(a, b, c);
     }
 }
@@ -660,36 +352,17 @@ class Quadratic {
 // =====================================================
 
 const QuadraticUtils = {
-    /**
-     * Format a number for display
-     * @param {number} num - The number to format
-     * @param {number} precision - Decimal places
-     * @returns {string}
-     */
-    formatNumber(num, precision = MATH_CONSTANTS.ROUNDING_PRECISION) {
+    formatNumber(num, precision = 2) {
+        if (num === undefined || num === null || isNaN(num)) return '0';
+        
         if (Number.isInteger(num)) {
             return num.toString();
         }
         
-        // Check if it's a nice fraction
-        const fraction = this.toFraction(num);
-        if (fraction) {
-            return fraction;
-        }
-        
-        // Round to precision
         const rounded = Math.round(num * Math.pow(10, precision)) / Math.pow(10, precision);
-        
-        // Remove trailing zeros
         return parseFloat(rounded.toFixed(precision)).toString();
     },
 
-    /**
-     * Format a number with sign for display in equations
-     * @param {number} num - The number
-     * @param {boolean} showPlus - Whether to show + for positive
-     * @returns {string}
-     */
     formatSignedNumber(num, showPlus = false) {
         const formatted = this.formatNumber(num);
         if (num >= 0) {
@@ -700,56 +373,20 @@ const QuadraticUtils = {
     },
 
     /**
-     * Try to convert a decimal to a simple fraction
-     * @param {number} num - The number
-     * @returns {string|null} Fraction string or null
-     */
-    toFraction(num, maxDenominator = 12) {
-        if (Number.isInteger(num)) {
-            return null;
-        }
-        
-        for (let d = 2; d <= maxDenominator; d++) {
-            const n = num * d;
-            if (Math.abs(n - Math.round(n)) < MATH_CONSTANTS.EPSILON) {
-                const numerator = Math.round(n);
-                const gcd = this.gcd(Math.abs(numerator), d);
-                const simpNum = numerator / gcd;
-                const simpDen = d / gcd;
-                if (simpDen === 1) return null;
-                return `${simpNum}/${simpDen}`;
-            }
-        }
-        return null;
-    },
-
-    /**
-     * Greatest common divisor
-     */
-    gcd(a, b) {
-        return b === 0 ? a : this.gcd(b, a % b);
-    },
-
-    /**
-     * Check if numbers are "nice" decimals (0.5, 0.25, etc.)
-     */
-    areNiceDecimals(numbers) {
-        const niceDecimals = [0, 0.25, 0.5, 0.75];
-        return numbers.every(n => {
-            const decimal = Math.abs(n) - Math.floor(Math.abs(n));
-            return niceDecimals.some(d => Math.abs(decimal - d) < MATH_CONSTANTS.EPSILON);
-        });
-    },
-
-    /**
-     * Parse a coordinate string like "(2, 3)" or "2, 3"
-     * @param {string} str - The coordinate string
-     * @returns {Object|null} {x, y} or null if invalid
+     * Parse coordinate string - VERY FLEXIBLE
+     * Accepts: "(2, 3)", "(2,3)", "2, 3", "2,3", "2 3", etc.
      */
     parseCoordinate(str) {
-        // Remove parentheses and spaces
-        const cleaned = str.replace(/[()]/g, '').trim();
-        const parts = cleaned.split(/[,\s]+/).filter(p => p.length > 0);
+        if (!str || typeof str !== 'string') return null;
+        
+        // Remove parentheses, brackets, spaces around commas
+        let cleaned = str.trim()
+            .replace(/[()[\]{}]/g, '')
+            .replace(/\s*,\s*/g, ',')
+            .replace(/\s+/g, ',')
+            .trim();
+        
+        const parts = cleaned.split(',').filter(p => p.length > 0);
         
         if (parts.length !== 2) return null;
         
@@ -762,97 +399,159 @@ const QuadraticUtils = {
     },
 
     /**
-     * Parse an equation like "x = 2" or "y = 3"
-     * @param {string} str - The equation string
-     * @returns {Object|null} {variable, value} or null
+     * Parse simple equation like "x = 2" or "y = 3"
+     * VERY FLEXIBLE
      */
     parseSimpleEquation(str) {
-        const match = str.match(/^\s*([xy])\s*=\s*(-?\d+\.?\d*(?:\/\d+)?)\s*$/i);
-        if (!match) return null;
+        if (!str || typeof str !== 'string') return null;
         
-        let value = match[2];
-        // Handle fractions
-        if (value.includes('/')) {
-            const [num, den] = value.split('/').map(Number);
-            value = num / den;
-        } else {
-            value = parseFloat(value);
+        const cleaned = str.toLowerCase().replace(/\s+/g, '');
+        
+        // Match "x=2", "x=-3", "x=2.5", "x=-2.5", etc.
+        const match = cleaned.match(/^([xy])=(-?\d+\.?\d*)$/);
+        
+        if (match) {
+            return {
+                variable: match[1],
+                value: parseFloat(match[2])
+            };
         }
         
-        return {
-            variable: match[1].toLowerCase(),
-            value: value
-        };
+        // Try just a number (assume they mean the value)
+        const numOnly = parseFloat(cleaned);
+        if (!isNaN(numOnly)) {
+            return { variable: 'x', value: numOnly };
+        }
+        
+        return null;
     },
 
     /**
-     * Parse a line equation like "y = 2x + 3"
-     * @param {string} str - The equation string
-     * @returns {Object|null} {m, c} slope and intercept
+     * Parse multiple values - VERY FLEXIBLE
+     * Accepts: "2, 3", "2 and 3", "x=2, x=3", "2 3", "2;3", etc.
      */
+    parseMultipleValues(str) {
+        if (!str || typeof str !== 'string') return [];
+        
+        let cleaned = str.toLowerCase()
+            .replace(/x\s*=/gi, '')
+            .replace(/y\s*=/gi, '')
+            .replace(/and/gi, ',')
+            .replace(/or/gi, ',')
+            .replace(/;/g, ',')
+            .replace(/\s+/g, ',')
+            .replace(/,+/g, ',')
+            .trim();
+        
+        if (cleaned.startsWith(',')) cleaned = cleaned.substring(1);
+        if (cleaned.endsWith(',')) cleaned = cleaned.slice(0, -1);
+        
+        const parts = cleaned.split(',').filter(p => p.length > 0);
+        const values = parts.map(p => parseFloat(p.trim())).filter(n => !isNaN(n));
+        
+        return values;
+    },
+
+    /**
+     * Parse factored form - VERY FLEXIBLE
+     * Accepts: "(x-2)(x-3)", "(x - 2)(x - 3)", "(x+2)(x+3)", etc.
+     */
+    parseFactoredForm(str) {
+        if (!str || typeof str !== 'string') return null;
+        
+        const cleaned = str.toLowerCase().replace(/\s+/g, '');
+        
+        // Match (x±a)(x±b) pattern
+        const pattern = /\(x([+-])(\d+)\)\(x([+-])(\d+)\)/;
+        const match = cleaned.match(pattern);
+        
+        if (match) {
+            const sign1 = match[1] === '+' ? 1 : -1;
+            const val1 = parseInt(match[2]) * sign1;
+            const sign2 = match[3] === '+' ? 1 : -1;
+            const val2 = parseInt(match[4]) * sign2;
+            
+            // Roots are the opposite of what's in the factor
+            return { r1: -val1, r2: -val2 };
+        }
+        
+        // Try alternative patterns
+        const pattern2 = /\(x([+-]\d+)\)\(x([+-]\d+)\)/;
+        const match2 = cleaned.match(pattern2);
+        
+        if (match2) {
+            const val1 = parseInt(match2[1]);
+            const val2 = parseInt(match2[2]);
+            return { r1: -val1, r2: -val2 };
+        }
+        
+        return null;
+    },
+
     parseLineEquation(str) {
-        // Handle "y = mx + c" format
+        if (!str || typeof str !== 'string') return null;
+        
         const cleaned = str.replace(/\s/g, '').toLowerCase();
         
-        // Match patterns like "y=2x+3", "y=-x-1", "y=3", "y=x"
-        let match = cleaned.match(/^y=(-?\d*\.?\d*)?x?([+-]\d+\.?\d*)?$/);
+        // y=mx+c, y=mx-c, y=-mx+c, y=x+c, y=c, etc.
+        const patterns = [
+            /^y=(-?\d*\.?\d*)x([+-]\d+\.?\d*)$/,  // y=2x+3
+            /^y=(-?\d*\.?\d*)x$/,                  // y=2x
+            /^y=([+-]?\d+\.?\d*)$/                 // y=3
+        ];
         
-        if (!match) return null;
-        
-        let m = 0;
-        let c = 0;
-        
-        // Extract slope
-        if (match[1] !== undefined) {
-            if (match[1] === '' || match[1] === '+') {
-                m = 1;
-            } else if (match[1] === '-') {
-                m = -1;
-            } else {
-                m = parseFloat(match[1]);
+        for (const pattern of patterns) {
+            const match = cleaned.match(pattern);
+            if (match) {
+                let m = 0, c = 0;
+                
+                if (pattern === patterns[0]) {
+                    m = match[1] === '' || match[1] === '+' ? 1 : (match[1] === '-' ? -1 : parseFloat(match[1]));
+                    c = parseFloat(match[2]);
+                } else if (pattern === patterns[1]) {
+                    m = match[1] === '' || match[1] === '+' ? 1 : (match[1] === '-' ? -1 : parseFloat(match[1]));
+                    c = 0;
+                } else if (pattern === patterns[2]) {
+                    m = 0;
+                    c = parseFloat(match[1]);
+                }
+                
+                return { m, c };
             }
         }
         
-        // Extract intercept
-        if (match[2] !== undefined) {
-            c = parseFloat(match[2]);
-        }
-        
-        return { m, c };
+        return null;
     },
 
-    /**
-     * Format a coordinate point for display
-     * @param {Object} point - {x, y}
-     * @returns {string}
-     */
     formatCoordinate(point) {
+        if (!point) return '(?, ?)';
         return `(${this.formatNumber(point.x)}, ${this.formatNumber(point.y)})`;
     },
 
     /**
      * Check if two numbers are approximately equal
-     * @param {number} a 
-     * @param {number} b 
-     * @param {number} tolerance 
-     * @returns {boolean}
+     * GENEROUS tolerance for student answers
      */
-    isApproxEqual(a, b, tolerance = 0.01) {
+    isApproxEqual(a, b, tolerance = 0.1) {
+        if (a === undefined || b === undefined) return false;
+        if (isNaN(a) || isNaN(b)) return false;
         return Math.abs(a - b) <= tolerance;
     },
 
     /**
      * Check if two points are approximately equal
      */
-    pointsEqual(p1, p2, tolerance = 0.01) {
+    pointsEqual(p1, p2, tolerance = 0.1) {
+        if (!p1 || !p2) return false;
         return this.isApproxEqual(p1.x, p2.x, tolerance) && 
                this.isApproxEqual(p1.y, p2.y, tolerance);
     },
 
     /**
-     * Check if two arrays of numbers contain the same values (order independent)
+     * Check if arrays contain same values (order independent)
      */
-    arraysEqualUnordered(arr1, arr2, tolerance = 0.01) {
+    arraysEqualUnordered(arr1, arr2, tolerance = 0.1) {
+        if (!arr1 || !arr2) return false;
         if (arr1.length !== arr2.length) return false;
         
         const sorted1 = [...arr1].sort((a, b) => a - b);
@@ -863,186 +562,19 @@ const QuadraticUtils = {
 };
 
 // =====================================================
-// QUADRATIC GENERATOR
-// =====================================================
-
-const QuadraticGenerator = {
-    /**
-     * Generate a random quadratic based on difficulty settings
-     * @param {Object} settings - Difficulty settings from CONFIG
-     * @returns {Quadratic}
-     */
-    generate(settings) {
-        const { coefficients } = settings;
-        
-        let a = this.randomCoefficient(coefficients.a);
-        let b = this.randomCoefficient(coefficients.b);
-        let c = this.randomCoefficient(coefficients.c);
-        
-        // Ensure a is not zero
-        while (a === 0) {
-            a = this.randomCoefficient(coefficients.a);
-        }
-        
-        return new Quadratic(a, b, c);
-    },
-
-    /**
-     * Generate a random coefficient based on settings
-     */
-    randomCoefficient(settings) {
-        const { min, max, allowNegative = true, allowZero = true, allowFractions = false } = settings;
-        
-        let value;
-        
-        if (allowFractions && Math.random() < 0.2) {
-            // Generate a simple fraction
-            const denominators = [2, 4];
-            const den = denominators[Math.floor(Math.random() * denominators.length)];
-            const numRange = (max - min) * den;
-            const num = Math.floor(Math.random() * numRange) + min * den;
-            value = num / den;
-        } else {
-            value = Math.floor(Math.random() * (max - min + 1)) + min;
-        }
-        
-        // Handle zero
-        if (!allowZero && value === 0) {
-            value = Math.random() < 0.5 ? 1 : -1;
-        }
-        
-        // Handle negative
-        if (!allowNegative && value < 0) {
-            value = Math.abs(value);
-        }
-        
-        return value;
-    },
-
-    /**
-     * Generate a quadratic with specific properties
-     * @param {Object} requirements
-     * @returns {Quadratic}
-     */
-    generateWithProperties(requirements) {
-        const {
-            hasRealRoots = null,
-            hasIntegerRoots = false,
-            opensUp = null,
-            yInterceptRange = null,
-            vertexInRange = null
-        } = requirements;
-        
-        let quadratic;
-        let attempts = 0;
-        const maxAttempts = 100;
-        
-        do {
-            // Start with integer roots if required
-            if (hasIntegerRoots) {
-                const a = Math.random() < 0.5 ? 1 : -1;
-                const r1 = Math.floor(Math.random() * 11) - 5;
-                const r2 = Math.floor(Math.random() * 11) - 5;
-                quadratic = Quadratic.fromRoots(a, r1, r2);
-            } else {
-                quadratic = this.generate({
-                    coefficients: {
-                        a: { min: -3, max: 3 },
-                        b: { min: -10, max: 10 },
-                        c: { min: -10, max: 10 }
-                    }
-                });
-            }
-            
-            attempts++;
-            
-            // Check requirements
-            if (opensUp !== null && (quadratic.a > 0) !== opensUp) continue;
-            if (hasRealRoots !== null) {
-                const hasRoots = quadratic.getXIntercepts().length > 0;
-                if (hasRoots !== hasRealRoots) continue;
-            }
-            if (yInterceptRange) {
-                const yInt = quadratic.getYIntercept();
-                if (yInt < yInterceptRange.min || yInt > yInterceptRange.max) continue;
-            }
-            if (vertexInRange) {
-                const vertex = quadratic.getTurningPoint();
-                if (vertex.x < vertexInRange.xMin || vertex.x > vertexInRange.xMax) continue;
-                if (vertex.y < vertexInRange.yMin || vertex.y > vertexInRange.yMax) continue;
-            }
-            
-            // All requirements met
-            return quadratic;
-            
-        } while (attempts < maxAttempts);
-        
-        // Fallback
-        console.warn('Could not generate quadratic with all requirements');
-        return quadratic;
-    },
-
-    /**
-     * Generate a quadratic suitable for a specific question type
-     */
-    generateForQuestionType(questionType, difficulty) {
-        switch (questionType) {
-            case 'x_intercepts_factor':
-                return this.generateWithProperties({ hasIntegerRoots: true });
-            
-            case 'discriminant':
-            case 'nature_of_roots':
-                // Random discriminant type
-                const rand = Math.random();
-                if (rand < 0.33) {
-                    return this.generateWithProperties({ hasRealRoots: true });
-                } else if (rand < 0.66) {
-                    // Generate with D = 0
-                    const a = Math.random() < 0.5 ? 1 : -1;
-                    const r = Math.floor(Math.random() * 9) - 4;
-                    return Quadratic.fromRoots(a, r, r);
-                } else {
-                    return this.generateWithProperties({ hasRealRoots: false });
-                }
-            
-            case 'turning_point':
-            case 'axis_symmetry':
-                // Nice vertex coordinates
-                return this.generateWithProperties({
-                    vertexInRange: { xMin: -5, xMax: 5, yMin: -8, yMax: 8 }
-                });
-            
-            default:
-                return this.generate(CONFIG.difficulty[difficulty]);
-        }
-    }
-};
-
-// =====================================================
-// LINE CLASS (for intersection problems)
+// LINE CLASS
 // =====================================================
 
 class Line {
-    /**
-     * Create a line y = mx + c
-     * @param {number} m - Slope
-     * @param {number} c - Y-intercept
-     */
     constructor(m, c) {
         this.m = m;
         this.c = c;
     }
 
-    /**
-     * Evaluate y for a given x
-     */
     evaluate(x) {
         return this.m * x + this.c;
     }
 
-    /**
-     * Get equation string
-     */
     getEquation() {
         if (this.m === 0) {
             return `y = ${QuadraticUtils.formatNumber(this.c)}`;
@@ -1050,55 +582,18 @@ class Line {
         
         let str = 'y = ';
         
-        if (this.m === 1) {
-            str += 'x';
-        } else if (this.m === -1) {
-            str += '-x';
-        } else {
-            str += `${QuadraticUtils.formatNumber(this.m)}x`;
-        }
+        if (this.m === 1) str += 'x';
+        else if (this.m === -1) str += '-x';
+        else str += `${QuadraticUtils.formatNumber(this.m)}x`;
         
         if (this.c !== 0) {
-            str += ` ${QuadraticUtils.formatSignedNumber(this.c, true)}`;
+            if (this.c > 0) str += ` + ${QuadraticUtils.formatNumber(this.c)}`;
+            else str += ` - ${QuadraticUtils.formatNumber(-this.c)}`;
         }
         
         return str;
     }
 
-    /**
-     * Generate points for plotting
-     */
-    generatePoints(xMin, xMax, numPoints = 2) {
-        const points = [];
-        const step = (xMax - xMin) / (numPoints - 1);
-        
-        for (let i = 0; i < numPoints; i++) {
-            const x = xMin + i * step;
-            points.push({ x, y: this.evaluate(x) });
-        }
-        
-        return points;
-    }
-
-    /**
-     * Create a line from two points
-     */
-    static fromTwoPoints(p1, p2) {
-        const m = (p2.y - p1.y) / (p2.x - p1.x);
-        const c = p1.y - m * p1.x;
-        return new Line(m, c);
-    }
-
-    /**
-     * Create a horizontal line y = k
-     */
-    static horizontal(k) {
-        return new Line(0, k);
-    }
-
-    /**
-     * Generate a random line
-     */
     static random(mRange = [-3, 3], cRange = [-5, 5]) {
         const m = Math.floor(Math.random() * (mRange[1] - mRange[0] + 1)) + mRange[0];
         const c = Math.floor(Math.random() * (cRange[1] - cRange[0] + 1)) + cRange[0];
@@ -1107,89 +602,317 @@ class Line {
 }
 
 // =====================================================
-// ANSWER VALIDATOR
+// ANSWER VALIDATOR - VERY FLEXIBLE!
 // =====================================================
 
 const AnswerValidator = {
     /**
-     * Validate an answer based on question type
-     * @param {string} userAnswer - The user's answer
-     * @param {*} correctAnswer - The correct answer
-     * @param {string} questionType - Type of question
-     * @param {number} tolerance - Allowed error
-     * @returns {Object} {isCorrect, feedback}
+     * Main validation function
+     * Tries to be as flexible as possible with student input
      */
-    validate(userAnswer, correctAnswer, questionType, tolerance = 0.05) {
-        const normalized = userAnswer.trim().toLowerCase();
+    validate(userAnswer, correctAnswer, questionType, tolerance = 0.1) {
+        // Handle empty or null answers
+        if (userAnswer === null || userAnswer === undefined) {
+            return { isCorrect: false, feedback: 'Please enter an answer.' };
+        }
         
+        const answer = String(userAnswer).trim();
+        
+        if (answer === '') {
+            return { isCorrect: false, feedback: 'Please enter an answer.' };
+        }
+        
+        // Route to appropriate validator
         switch (questionType) {
+            case 'substitution_find_y':
+            case 'evaluate_at_point':
+            case 'complete_table':
+            case 'find_coordinates':
+            case 'y_intercept':
+            case 'max_min_value':
+            case 'discriminant':
+            case 'discriminant_basic':
+                return this.validateNumber(answer, correctAnswer, tolerance);
+            
+            case 'substitution_find_x':
+            case 'solve_equation':
+            case 'x_intercepts_factor':
+            case 'x_intercepts_quadratic_formula':
+                return this.validateRoots(answer, correctAnswer, tolerance);
+            
+            case 'factorise_expression':
+                return this.validateFactored(answer, correctAnswer);
+            
+            case 'find_equation_from_roots':
+            case 'coefficients':
+                return this.validateCoefficients(answer, correctAnswer);
+            
             case 'axis_symmetry':
             case 'axis_symmetry_basic':
-                return this.validateLineOfSymmetry(normalized, correctAnswer);
+            case 'equation':
+                return this.validateEquation(answer, correctAnswer, tolerance);
             
             case 'turning_point':
             case 'turning_point_basic':
-            case 'find_coordinates':
-                return this.validateCoordinate(normalized, correctAnswer, tolerance);
-            
-            case 'x_intercepts_factor':
-            case 'x_intercepts_quadratic_formula':
-                return this.validateXIntercepts(normalized, correctAnswer, tolerance);
-            
-            case 'y_intercept':
-                return this.validateYIntercept(normalized, correctAnswer, tolerance);
-            
-            case 'discriminant':
-            case 'max_min_value':
-                return this.validateNumericValue(normalized, correctAnswer, tolerance);
+            case 'vertex_form':
+            case 'coordinate':
+                return this.validateCoordinate(answer, correctAnswer, tolerance);
             
             case 'direction_opening':
             case 'nature_of_roots':
-                return this.validateMultipleChoice(normalized, correctAnswer);
-            
-            case 'line_intersection':
-                return this.validateIntersectionPoints(normalized, correctAnswer, tolerance);
+            case 'multiple_choice':
+                return this.validateChoice(answer, correctAnswer);
             
             case 'completing_square':
-            case 'vertex_form':
-                return this.validateVertexForm(normalized, correctAnswer);
+            case 'multiple_values':
+                return this.validateCompletingSquare(answer, correctAnswer, tolerance);
             
             case 'range_of_values':
-                return this.validateRange(normalized, correctAnswer, tolerance);
+            case 'inequality':
+                return this.validateRange(answer, correctAnswer, tolerance);
+            
+            case 'line_intersection':
+            case 'coordinates':
+                return this.validateMultiplePoints(answer, correctAnswer, tolerance);
             
             default:
-                return this.validateGeneric(normalized, correctAnswer, tolerance);
+                return this.validateGeneric(answer, correctAnswer, tolerance);
         }
     },
 
-    validateLineOfSymmetry(answer, correct) {
-        // Parse "x = 2" format
-        const parsed = QuadraticUtils.parseSimpleEquation(answer);
+    /**
+     * Validate single number answer
+     * Very flexible - accepts many formats
+     */
+    validateNumber(answer, correct, tolerance) {
+        // Try to extract a number from the answer
+        let value;
         
-        if (!parsed || parsed.variable !== 'x') {
+        // Remove common prefixes
+        const cleaned = answer.toLowerCase()
+            .replace(/^y\s*=\s*/, '')
+            .replace(/^x\s*=\s*/, '')
+            .replace(/^answer\s*[:=]?\s*/, '')
+            .replace(/^=\s*/, '')
+            .trim();
+        
+        value = parseFloat(cleaned);
+        
+        if (isNaN(value)) {
             return {
                 isCorrect: false,
-                feedback: 'Please enter your answer in the format "x = value"'
+                feedback: `I couldn't understand "${answer}". Please enter a number.`
             };
         }
         
-        const isCorrect = QuadraticUtils.isApproxEqual(parsed.value, correct, 0.01);
+        const isCorrect = QuadraticUtils.isApproxEqual(value, correct, tolerance);
         
         return {
             isCorrect,
             feedback: isCorrect 
-                ? 'Correct!' 
-                : `Incorrect. The line of symmetry is x = ${QuadraticUtils.formatNumber(correct)}`
+                ? '✓ Correct!' 
+                : `✗ Incorrect. The answer is ${QuadraticUtils.formatNumber(correct)}`
         };
     },
 
+    /**
+     * Validate roots/solutions
+     * Accepts many formats, order doesn't matter
+     */
+    validateRoots(answer, correct, tolerance) {
+        // Handle "no real roots" case
+        if (!Array.isArray(correct) || correct.length === 0 || correct === 'no real roots') {
+            const noRootsPatterns = ['no', 'none', 'no real', 'no solution', 'no roots', 'impossible'];
+            const hasNoRoots = noRootsPatterns.some(p => answer.toLowerCase().includes(p));
+            
+            return {
+                isCorrect: hasNoRoots,
+                feedback: hasNoRoots 
+                    ? '✓ Correct! There are no real roots.' 
+                    : '✗ Incorrect. This equation has no real roots.'
+            };
+        }
+        
+        // Parse user's answer
+        const userValues = QuadraticUtils.parseMultipleValues(answer);
+        
+        if (userValues.length === 0) {
+            return {
+                isCorrect: false,
+                feedback: `I couldn't understand "${answer}". Enter values like: 2, 3 or x = 2, 3`
+            };
+        }
+        
+        // Check if correct
+        const isCorrect = QuadraticUtils.arraysEqualUnordered(userValues, correct, tolerance);
+        
+        const correctStr = correct.map(v => QuadraticUtils.formatNumber(v)).join(' or x = ');
+        
+        return {
+            isCorrect,
+            feedback: isCorrect 
+                ? '✓ Correct!' 
+                : `✗ Incorrect. The solutions are x = ${correctStr}`
+        };
+    },
+
+    /**
+     * Validate factored form
+     * Very flexible - accepts many formats
+     */
+    validateFactored(answer, correct) {
+        if (!correct || typeof correct !== 'object') {
+            return { isCorrect: false, feedback: 'Error in question.' };
+        }
+        
+        const { r1, r2 } = correct;
+        
+        // Try to parse user's factored form
+        const parsed = QuadraticUtils.parseFactoredForm(answer);
+        
+        if (parsed) {
+            // Check if roots match (order doesn't matter)
+            const userRoots = [parsed.r1, parsed.r2].sort((a, b) => a - b);
+            const correctRoots = [r1, r2].sort((a, b) => a - b);
+            
+            const isCorrect = userRoots[0] === correctRoots[0] && userRoots[1] === correctRoots[1];
+            
+            if (isCorrect) {
+                return { isCorrect: true, feedback: '✓ Correct!' };
+            }
+        }
+        
+        // Maybe they entered just the roots?
+        const userValues = QuadraticUtils.parseMultipleValues(answer);
+        if (userValues.length === 2) {
+            const userRoots = [...userValues].sort((a, b) => a - b);
+            const correctRoots = [r1, r2].sort((a, b) => a - b);
+            
+            if (QuadraticUtils.isApproxEqual(userRoots[0], correctRoots[0], 0.01) &&
+                QuadraticUtils.isApproxEqual(userRoots[1], correctRoots[1], 0.01)) {
+                return { 
+                    isCorrect: true, 
+                    feedback: '✓ Correct! (The factored form would be written with brackets)' 
+                };
+            }
+        }
+        
+        // Build correct factored form for feedback
+        const f1 = r1 >= 0 ? `(x - ${r1})` : `(x + ${-r1})`;
+        const f2 = r2 >= 0 ? `(x - ${r2})` : `(x + ${-r2})`;
+        
+        return {
+            isCorrect: false,
+            feedback: `✗ Incorrect. The factored form is ${f1}${f2}`
+        };
+    },
+
+    /**
+     * Validate coefficients (b and c)
+     */
+    validateCoefficients(answer, correct) {
+        if (!correct || typeof correct !== 'object') {
+            return { isCorrect: false, feedback: 'Error in question.' };
+        }
+        
+        const { b, c } = correct;
+        
+        // Try to parse two values from the answer
+        const values = QuadraticUtils.parseMultipleValues(answer);
+        
+        // Also try to find "b = X" and "c = Y" patterns
+        const bMatch = answer.toLowerCase().match(/b\s*=\s*(-?\d+)/);
+        const cMatch = answer.toLowerCase().match(/c\s*=\s*(-?\d+)/);
+        
+        let userB, userC;
+        
+        if (bMatch && cMatch) {
+            userB = parseInt(bMatch[1]);
+            userC = parseInt(cMatch[1]);
+        } else if (values.length >= 2) {
+            userB = values[0];
+            userC = values[1];
+        } else if (values.length === 1) {
+            return {
+                isCorrect: false,
+                feedback: 'Please enter both b and c values.'
+            };
+        } else {
+            return {
+                isCorrect: false,
+                feedback: `I couldn't understand "${answer}". Enter like: b = -5, c = 6`
+            };
+        }
+        
+        const isCorrect = QuadraticUtils.isApproxEqual(userB, b, 0.01) && 
+                         QuadraticUtils.isApproxEqual(userC, c, 0.01);
+        
+        return {
+            isCorrect,
+            feedback: isCorrect 
+                ? '✓ Correct!' 
+                : `✗ Incorrect. b = ${b} and c = ${c}`
+        };
+    },
+
+    /**
+     * Validate equation like x = 2
+     */
+    validateEquation(answer, correct, tolerance) {
+        // Try to parse as equation
+        const parsed = QuadraticUtils.parseSimpleEquation(answer);
+        
+        if (parsed && parsed.variable === 'x') {
+            const isCorrect = QuadraticUtils.isApproxEqual(parsed.value, correct, tolerance);
+            return {
+                isCorrect,
+                feedback: isCorrect 
+                    ? '✓ Correct!' 
+                    : `✗ Incorrect. x = ${QuadraticUtils.formatNumber(correct)}`
+            };
+        }
+        
+        // Try just a number
+        const num = parseFloat(answer.replace(/[^0-9.-]/g, ''));
+        if (!isNaN(num)) {
+            const isCorrect = QuadraticUtils.isApproxEqual(num, correct, tolerance);
+            return {
+                isCorrect,
+                feedback: isCorrect 
+                    ? '✓ Correct!' 
+                    : `✗ Incorrect. x = ${QuadraticUtils.formatNumber(correct)}`
+            };
+        }
+        
+        return {
+            isCorrect: false,
+            feedback: `Please enter like: x = ${QuadraticUtils.formatNumber(correct)}`
+        };
+    },
+
+    /**
+     * Validate coordinate point
+     */
     validateCoordinate(answer, correct, tolerance) {
         const parsed = QuadraticUtils.parseCoordinate(answer);
         
         if (!parsed) {
+            // Try to extract two numbers
+            const nums = QuadraticUtils.parseMultipleValues(answer);
+            if (nums.length === 2) {
+                const isCorrect = QuadraticUtils.isApproxEqual(nums[0], correct.x, tolerance) &&
+                                 QuadraticUtils.isApproxEqual(nums[1], correct.y, tolerance);
+                return {
+                    isCorrect,
+                    feedback: isCorrect 
+                        ? '✓ Correct!' 
+                        : `✗ Incorrect. The answer is (${QuadraticUtils.formatNumber(correct.x)}, ${QuadraticUtils.formatNumber(correct.y)})`
+                };
+            }
+            
             return {
                 isCorrect: false,
-                feedback: 'Please enter your answer in the format "(x, y)"'
+                feedback: 'Please enter as (x, y), for example: (2, -3)'
             };
         }
         
@@ -1198,198 +921,222 @@ const AnswerValidator = {
         return {
             isCorrect,
             feedback: isCorrect 
-                ? 'Correct!' 
-                : `Incorrect. The correct answer is ${QuadraticUtils.formatCoordinate(correct)}`
+                ? '✓ Correct!' 
+                : `✗ Incorrect. The answer is (${QuadraticUtils.formatNumber(correct.x)}, ${QuadraticUtils.formatNumber(correct.y)})`
         };
     },
 
-    validateXIntercepts(answer, correct, tolerance) {
-        // Parse various formats: "x = 1, 3" or "1 and 3" or "1, 3"
-        const cleaned = answer.replace(/x\s*=/gi, '').replace(/and/gi, ',');
-        const parts = cleaned.split(/[,\s]+/).filter(p => p.length > 0);
+    /**
+     * Validate multiple choice / text choice
+     */
+    validateChoice(answer, correct) {
+        const userLower = answer.toLowerCase().trim();
+        const correctLower = correct.toLowerCase().trim();
         
-        const values = parts.map(p => parseFloat(p)).filter(n => !isNaN(n));
+        // Check for exact match or contains
+        const isCorrect = userLower === correctLower || 
+                         userLower.includes(correctLower) ||
+                         correctLower.includes(userLower);
         
-        if (values.length !== correct.length) {
-            if (correct.length === 0) {
-                const isNoRoots = answer.includes('no') || answer.includes('none');
-                return {
-                    isCorrect: isNoRoots,
-                    feedback: isNoRoots ? 'Correct!' : 'This quadratic has no real roots'
-                };
+        // Also check for keywords
+        if (!isCorrect) {
+            if (correctLower.includes('upward') || correctLower.includes('up')) {
+                if (userLower.includes('up')) {
+                    return { isCorrect: true, feedback: '✓ Correct!' };
+                }
             }
-            return {
-                isCorrect: false,
-                feedback: `Expected ${correct.length} x-intercept(s)`
-            };
+            if (correctLower.includes('downward') || correctLower.includes('down')) {
+                if (userLower.includes('down')) {
+                    return { isCorrect: true, feedback: '✓ Correct!' };
+                }
+            }
+            if (correctLower.includes('two different')) {
+                if (userLower.includes('two') && (userLower.includes('different') || userLower.includes('distinct'))) {
+                    return { isCorrect: true, feedback: '✓ Correct!' };
+                }
+            }
+            if (correctLower.includes('equal')) {
+                if (userLower.includes('equal') || userLower.includes('repeated') || userLower.includes('same')) {
+                    return { isCorrect: true, feedback: '✓ Correct!' };
+                }
+            }
+            if (correctLower.includes('no real')) {
+                if (userLower.includes('no') || userLower.includes('none') || userLower.includes('imaginary')) {
+                    return { isCorrect: true, feedback: '✓ Correct!' };
+                }
+            }
         }
-        
-        const isCorrect = QuadraticUtils.arraysEqualUnordered(values, correct, tolerance);
         
         return {
             isCorrect,
             feedback: isCorrect 
-                ? 'Correct!' 
-                : `Incorrect. The x-intercepts are x = ${correct.map(v => QuadraticUtils.formatNumber(v)).join(', ')}`
+                ? '✓ Correct!' 
+                : `✗ Incorrect. The answer is: ${correct}`
         };
     },
 
-    validateYIntercept(answer, correct, tolerance) {
-        // Accept "5", "y = 5", "(0, 5)"
-        let value;
+    /**
+     * Validate completing the square (a, h, k values)
+     */
+    validateCompletingSquare(answer, correct, tolerance) {
+        if (!correct || typeof correct !== 'object') {
+            return { isCorrect: false, feedback: 'Error in question.' };
+        }
         
-        const coordParsed = QuadraticUtils.parseCoordinate(answer);
-        if (coordParsed) {
-            value = coordParsed.y;
+        const { a, h, k } = correct;
+        const values = QuadraticUtils.parseMultipleValues(answer);
+        
+        // Try to find a=, h=, k= patterns
+        const aMatch = answer.toLowerCase().match(/a\s*=\s*(-?\d+\.?\d*)/);
+        const hMatch = answer.toLowerCase().match(/h\s*=\s*(-?\d+\.?\d*)/);
+        const kMatch = answer.toLowerCase().match(/k\s*=\s*(-?\d+\.?\d*)/);
+        
+        let userA, userH, userK;
+        
+        if (aMatch && hMatch && kMatch) {
+            userA = parseFloat(aMatch[1]);
+            userH = parseFloat(hMatch[1]);
+            userK = parseFloat(kMatch[1]);
+        } else if (values.length >= 3) {
+            userA = values[0];
+            userH = values[1];
+            userK = values[2];
         } else {
-            const eqParsed = QuadraticUtils.parseSimpleEquation(answer);
-            if (eqParsed && eqParsed.variable === 'y') {
-                value = eqParsed.value;
-            } else {
-                value = parseFloat(answer);
-            }
-        }
-        
-        if (isNaN(value)) {
             return {
                 isCorrect: false,
-                feedback: 'Please enter a valid number'
+                feedback: 'Please enter a, h, and k values. Example: a = 1, h = 2, k = -3'
             };
         }
         
-        const isCorrect = QuadraticUtils.isApproxEqual(value, correct, tolerance);
+        const isCorrect = QuadraticUtils.isApproxEqual(userA, a, tolerance) &&
+                         QuadraticUtils.isApproxEqual(userH, h, tolerance) &&
+                         QuadraticUtils.isApproxEqual(userK, k, tolerance);
         
         return {
             isCorrect,
             feedback: isCorrect 
-                ? 'Correct!' 
-                : `Incorrect. The y-intercept is ${QuadraticUtils.formatNumber(correct)}`
+                ? '✓ Correct!' 
+                : `✗ Incorrect. a = ${QuadraticUtils.formatNumber(a)}, h = ${QuadraticUtils.formatNumber(h)}, k = ${QuadraticUtils.formatNumber(k)}`
         };
     },
 
-    validateNumericValue(answer, correct, tolerance) {
-        const value = parseFloat(answer);
+    /**
+     * Validate range/inequality
+     */
+    validateRange(answer, correct, tolerance) {
+        if (!correct || typeof correct !== 'object') {
+            return { isCorrect: false, feedback: 'Error in question.' };
+        }
         
-        if (isNaN(value)) {
+        const { inequality, value, description } = correct;
+        
+        // Extract number from answer
+        const numMatch = answer.match(/-?\d+\.?\d*/);
+        if (!numMatch) {
             return {
                 isCorrect: false,
-                feedback: 'Please enter a valid number'
+                feedback: `Please enter like: ${description}`
             };
         }
         
-        const isCorrect = QuadraticUtils.isApproxEqual(value, correct, tolerance);
+        const userValue = parseFloat(numMatch[0]);
+        const valueCorrect = QuadraticUtils.isApproxEqual(userValue, value, tolerance);
+        
+        // Check inequality direction
+        const hasGte = answer.includes('≥') || answer.includes('>=') || answer.includes('greater');
+        const hasLte = answer.includes('≤') || answer.includes('<=') || answer.includes('less');
+        
+        const inequalityCorrect = (inequality === 'gte' && hasGte) || 
+                                  (inequality === 'lte' && hasLte) ||
+                                  (!hasGte && !hasLte); // Accept if they just give the number
+        
+        const isCorrect = valueCorrect && inequalityCorrect;
         
         return {
             isCorrect,
             feedback: isCorrect 
-                ? 'Correct!' 
-                : `Incorrect. The correct answer is ${QuadraticUtils.formatNumber(correct)}`
+                ? '✓ Correct!' 
+                : `✗ Incorrect. ${description}`
         };
     },
 
-    validateMultipleChoice(answer, correct) {
-        // Normalize both answers
-        const normalizedAnswer = answer.toLowerCase().trim();
-        const normalizedCorrect = correct.toLowerCase().trim();
+    /**
+     * Validate multiple points (intersections)
+     */
+    validateMultiplePoints(answer, correct, tolerance) {
+        if (!Array.isArray(correct)) {
+            return { isCorrect: false, feedback: 'Error in question.' };
+        }
         
-        // Check for keyword matches
-        const isCorrect = normalizedAnswer.includes(normalizedCorrect) || 
-                         normalizedCorrect.includes(normalizedAnswer);
+        // Try to extract coordinate pairs
+        const coordPattern = /\(?\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*\)?/g;
+        const matches = [...answer.matchAll(coordPattern)];
         
-        return {
-            isCorrect,
-            feedback: isCorrect ? 'Correct!' : `Incorrect. The correct answer is "${correct}"`
-        };
-    },
-
-    validateIntersectionPoints(answer, correct, tolerance) {
-        // Parse multiple coordinates
-        const coordPattern = /\(([^)]+)\)/g;
-        const matches = answer.match(coordPattern) || [];
+        const userPoints = matches.map(m => ({
+            x: parseFloat(m[1]),
+            y: parseFloat(m[2])
+        }));
         
-        const parsed = matches.map(m => QuadraticUtils.parseCoordinate(m)).filter(p => p);
-        
-        if (parsed.length !== correct.length) {
+        if (userPoints.length !== correct.length) {
             return {
                 isCorrect: false,
-                feedback: `Expected ${correct.length} intersection point(s)`
+                feedback: `Expected ${correct.length} point(s). Found ${userPoints.length}.`
             };
         }
         
-        // Check if all points match (order independent)
-        const allMatch = parsed.every(p => 
-            correct.some(c => QuadraticUtils.pointsEqual(p, c, tolerance))
+        // Check if all points match (order doesn't matter)
+        const allMatch = correct.every(cp => 
+            userPoints.some(up => QuadraticUtils.pointsEqual(up, cp, tolerance))
         );
+        
+        const correctStr = correct.map(p => `(${QuadraticUtils.formatNumber(p.x)}, ${QuadraticUtils.formatNumber(p.y)})`).join(' and ');
         
         return {
             isCorrect: allMatch,
             feedback: allMatch 
-                ? 'Correct!' 
-                : `Incorrect. The intersection points are ${correct.map(p => QuadraticUtils.formatCoordinate(p)).join(' and ')}`
+                ? '✓ Correct!' 
+                : `✗ Incorrect. The points are: ${correctStr}`
         };
     },
 
-    validateVertexForm(answer, correct) {
-        // This is complex - simplified check for now
-        const { a, h, k } = correct;
-        
-        // Check if answer contains the key values
-        const hasA = answer.includes(QuadraticUtils.formatNumber(a));
-        const hasH = answer.includes(QuadraticUtils.formatNumber(h));
-        const hasK = answer.includes(QuadraticUtils.formatNumber(k));
-        
-        const isCorrect = hasA && hasH && hasK;
-        
-        return {
-            isCorrect,
-            feedback: isCorrect 
-                ? 'Correct!' 
-                : `Check your answer. The vertex form is ${a}(x ${QuadraticUtils.formatSignedNumber(-h)})² ${QuadraticUtils.formatSignedNumber(k, true)}`
-        };
-    },
-
-    validateRange(answer, correct, tolerance) {
-        const { inequality, value } = correct;
-        
-        // Check for inequality symbol and value
-        const hasGte = answer.includes('≥') || answer.includes('>=');
-        const hasLte = answer.includes('≤') || answer.includes('<=');
-        
-        const correctSymbol = (inequality === 'gte' && hasGte) || (inequality === 'lte' && hasLte);
-        
-        // Extract number from answer
-        const numMatch = answer.match(/-?\d+\.?\d*/);
-        const answerValue = numMatch ? parseFloat(numMatch[0]) : NaN;
-        
-        const correctValue = !isNaN(answerValue) && 
-                            QuadraticUtils.isApproxEqual(answerValue, value, tolerance);
-        
-        const isCorrect = correctSymbol && correctValue;
-        
-        return {
-            isCorrect,
-            feedback: isCorrect ? 'Correct!' : `Incorrect. ${correct.description}`
-        };
-    },
-
+    /**
+     * Generic validator - try everything
+     */
     validateGeneric(answer, correct, tolerance) {
-        if (typeof correct === 'number') {
-            return this.validateNumericValue(answer, correct, tolerance);
+        // Try as number
+        const num = parseFloat(answer.replace(/[^0-9.-]/g, ''));
+        if (!isNaN(num) && typeof correct === 'number') {
+            const isCorrect = QuadraticUtils.isApproxEqual(num, correct, tolerance);
+            return {
+                isCorrect,
+                feedback: isCorrect ? '✓ Correct!' : `✗ Incorrect. Answer: ${correct}`
+            };
+        }
+        
+        // Try as string match
+        if (typeof correct === 'string') {
+            const isCorrect = answer.toLowerCase().trim() === correct.toLowerCase().trim();
+            return {
+                isCorrect,
+                feedback: isCorrect ? '✓ Correct!' : `✗ Incorrect. Answer: ${correct}`
+            };
         }
         
         return {
-            isCorrect: answer === correct.toString().toLowerCase(),
-            feedback: `The correct answer is ${correct}`
+            isCorrect: false,
+            feedback: `Could not validate answer. Expected: ${JSON.stringify(correct)}`
         };
     }
 };
 
-// Export for module systems
+// =====================================================
+// EXPORT
+// =====================================================
+
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         Quadratic,
         QuadraticUtils,
-        QuadraticGenerator,
         Line,
         AnswerValidator
     };

@@ -1,20 +1,20 @@
 /* =====================================================
    QUADRATIC CATAPULT QUEST - CONFIGURATION
    =====================================================
-   All game constants, settings, and configuration
-   CORRECTED: Proper topics for each level
+   CORRECTED VERSION - Matches new question types
    
    BEGINNER (Sec 1-2):
    - Substitution (find y when x = ?)
-   - Factorisation (solve when y = 0, integer roots)
-   - Y-intercept (just the constant c)
-   - Direction of opening (up/down)
+   - Solve by factorisation (find x when y = 0)
+   - Factorise expressions
+   - Find equation from roots
+   - Complete table of values
    
    INTERMEDIATE (Sec 3):
-   - Line of symmetry formula
+   - Line of symmetry
    - Turning point
    - Max/min values
-   - Discriminant basics
+   - Discriminant
    
    ADVANCED (O-Level 4052):
    - Quadratic formula
@@ -29,7 +29,7 @@ const CONFIG = {
     // =====================================================
     game: {
         name: 'Quadratic Catapult Quest',
-        version: '1.1.0',
+        version: '1.2.0',
         author: 'Educational Games',
         description: 'Master quadratic curves through interactive gameplay'
     },
@@ -40,8 +40,8 @@ const CONFIG = {
     difficulty: {
         // =================================================
         // BEGINNER - Secondary 1-2
-        // Only substitution, factorisation, basic concepts
-        // ALL ANSWERS MUST BE INTEGERS
+        // Substitution, factorisation, basic solving
+        // ALL INTEGER ANSWERS
         // =================================================
         beginner: {
             id: 'beginner',
@@ -51,7 +51,7 @@ const CONFIG = {
             color: '#4ECDC4',
             
             questionsPerLevel: 8,
-            timePerQuestion: 0,     // No timer for beginners
+            timePerQuestion: 0,         // No timer for beginners
             lives: 5,
             
             // Only a = 1, integer b and c for nice factorisation
@@ -61,26 +61,26 @@ const CONFIG = {
                 c: { min: -12, max: 12, integersOnly: true }
             },
             
-            // MUST have integer roots for factorisation
             requireIntegerRoots: true,
             requireIntegerAnswers: true,
             
-            // Topics for Sec 1-2 ONLY
+            // BEGINNER TOPICS - Must match question generator names!
             topics: [
-                'find_y_given_x',           // Substitution: find y when x = 2
-                'evaluate_expression',       // Same as above, different wording
-                'y_intercept',              // Just identify c
-                'direction_opening',         // Up or down based on sign of a
-                'x_intercepts_factor',      // Solve by factorisation (integer roots)
-                'find_x_given_y_basic'      // Solve when y = 0 (same as x-intercepts)
+                'substitution_find_y',      // Given x, calculate y
+                'evaluate_at_point',        // Calculate expression value
+                'complete_table',           // Fill in missing table value
+                'solve_equation',           // Solve quadratic = 0
+                'factorise_expression',     // Write in factored form
+                'substitution_find_x',      // Given y, find x
+                'find_equation_from_roots'  // Given roots, find b and c
             ],
             
             features: {
                 showGrid: true,
                 showAxisLabels: true,
-                showEquationForms: false,   // Don't show vertex form
+                showEquationForms: false,
                 showHints: true,
-                multipleChoice: true,       // Easier for beginners
+                multipleChoice: false,      // Text input for practice
                 graphTools: false
             },
             
@@ -96,7 +96,6 @@ const CONFIG = {
         // =================================================
         // INTERMEDIATE - Secondary 3
         // Line of symmetry, turning point, max/min
-        // Can have simple decimals (halves)
         // =================================================
         intermediate: {
             id: 'intermediate',
@@ -117,17 +116,17 @@ const CONFIG = {
             
             requireIntegerRoots: false,
             requireIntegerAnswers: false,
-            preferIntegerVertex: true,      // Prefer but not required
+            preferIntegerVertex: true,
             
+            // INTERMEDIATE TOPICS
             topics: [
-                'find_y_given_x',           // Still useful
-                'y_intercept',
-                'x_intercepts_factor',      // Factorisation
-                'axis_symmetry_basic',      // x = -b/(2a) with integer answer
-                'axis_symmetry',            // x = -b/(2a) general
+                'substitution_find_y',      // Still useful
+                'solve_equation',           // Solve by factorising
+                'axis_symmetry_basic',      // x = -b/(2a), integer answer
+                'axis_symmetry',            // x = -b/(2a), any answer
                 'turning_point_basic',      // Integer vertex
-                'turning_point',            // General vertex
-                'max_min_value',            // Maximum or minimum y value
+                'turning_point',            // Any vertex
+                'max_min_value',            // Maximum or minimum y
                 'discriminant_basic'        // Calculate b² - 4ac
             ],
             
@@ -151,8 +150,7 @@ const CONFIG = {
         
         // =================================================
         // ADVANCED - O-Level 4052
-        // Full syllabus including quadratic formula,
-        // completing square, intersections
+        // Full syllabus
         // =================================================
         advanced: {
             id: 'advanced',
@@ -174,11 +172,12 @@ const CONFIG = {
             requireIntegerRoots: false,
             requireIntegerAnswers: false,
             
+            // ADVANCED TOPICS
             topics: [
                 'axis_symmetry',
                 'turning_point',
                 'max_min_value',
-                'x_intercepts_factor',
+                'solve_equation',
                 'x_intercepts_quadratic_formula',
                 'discriminant',
                 'nature_of_roots',
@@ -209,7 +208,6 @@ const CONFIG = {
         
         // =================================================
         // EXPERT - Challenge Mode
-        // All topics with harder numbers
         // =================================================
         expert: {
             id: 'expert',
@@ -231,8 +229,8 @@ const CONFIG = {
             requireIntegerRoots: false,
             requireIntegerAnswers: false,
             
+            // EXPERT TOPICS
             topics: [
-                'axis_symmetry',
                 'turning_point',
                 'max_min_value',
                 'x_intercepts_quadratic_formula',
@@ -242,16 +240,14 @@ const CONFIG = {
                 'vertex_form',
                 'find_coordinates',
                 'range_of_values',
-                'line_intersection',
-                'simultaneous_equations',
-                'tangent_conditions'
+                'line_intersection'
             ],
             
             features: {
                 showGrid: true,
                 showAxisLabels: true,
                 showEquationForms: true,
-                showHints: false,           // No hints for experts
+                showHints: false,
                 multipleChoice: false,
                 graphTools: true
             },
@@ -267,83 +263,92 @@ const CONFIG = {
     },
 
     // =====================================================
-    // QUESTION TYPES DEFINITION
+    // QUESTION TYPES - Must match generator function names!
     // =====================================================
     questionTypes: {
         // -------------------------------------------------
-        // BEGINNER QUESTIONS (Sec 1-2)
+        // BEGINNER (Sec 1-2) - Substitution & Factorisation
         // -------------------------------------------------
         
-        find_y_given_x: {
-            id: 'find_y_given_x',
-            name: 'Find y given x',
-            description: 'Substitute x value to find y',
+        substitution_find_y: {
+            id: 'substitution_find_y',
+            name: 'Find y (Substitution)',
+            description: 'Given x value, calculate y',
             category: 'substitution',
             inputType: 'value',
             difficulty: 1,
             requiresInteger: true,
-            example: 'If y = x² - 3x + 2, find y when x = 4'
+            example: 'y = x² - 3x + 2. Find y when x = 4.'
         },
         
-        evaluate_expression: {
-            id: 'evaluate_expression',
+        evaluate_at_point: {
+            id: 'evaluate_at_point',
             name: 'Evaluate Expression',
-            description: 'Calculate y for a given x',
+            description: 'Calculate expression value at given x',
             category: 'substitution',
             inputType: 'value',
             difficulty: 1,
             requiresInteger: true,
-            example: 'Calculate the value of x² - 5x + 6 when x = 3'
+            example: 'Calculate x² - 5x + 6 when x = 3.'
         },
         
-        y_intercept: {
-            id: 'y_intercept',
-            name: 'Y-Intercept',
-            description: 'Find where graph crosses y-axis',
-            category: 'basic',
+        complete_table: {
+            id: 'complete_table',
+            name: 'Complete Table',
+            description: 'Fill in missing value in table',
+            category: 'substitution',
             inputType: 'value',
             difficulty: 1,
             requiresInteger: true,
-            example: 'Find the y-intercept of y = x² + 2x - 8'
+            example: 'Complete the table of values.'
         },
         
-        direction_opening: {
-            id: 'direction_opening',
-            name: 'Direction of Opening',
-            description: 'Does the parabola open up or down?',
-            category: 'basic',
-            inputType: 'multiple_choice',
-            difficulty: 1,
+        substitution_find_x: {
+            id: 'substitution_find_x',
+            name: 'Find x (Substitution)',
+            description: 'Given y value, find x by solving',
+            category: 'substitution',
+            inputType: 'values',
+            difficulty: 2,
             requiresInteger: true,
-            example: 'Does y = -x² + 3x open upwards or downwards?'
+            example: 'y = x² - 5x + 6. Find x when y = 0.'
         },
         
-        x_intercepts_factor: {
-            id: 'x_intercepts_factor',
-            name: 'Solve by Factorisation',
-            description: 'Find x when y = 0 by factoring',
+        factorise_expression: {
+            id: 'factorise_expression',
+            name: 'Factorise',
+            description: 'Write expression in factored form',
+            category: 'factorisation',
+            inputType: 'factored',
+            difficulty: 2,
+            requiresInteger: true,
+            example: 'Factorise: x² - 5x + 6'
+        },
+        
+        solve_equation: {
+            id: 'solve_equation',
+            name: 'Solve Equation',
+            description: 'Solve quadratic equation = 0',
             category: 'factorisation',
             inputType: 'values',
-            format: 'x = ? or x = ?',
             difficulty: 2,
             requiresInteger: true,
             example: 'Solve x² - 5x + 6 = 0'
         },
         
-        find_x_given_y_basic: {
-            id: 'find_x_given_y_basic',
-            name: 'Solve Equation',
-            description: 'Find x when y = 0',
+        find_equation_from_roots: {
+            id: 'find_equation_from_roots',
+            name: 'Find Equation from Roots',
+            description: 'Given roots, find coefficients b and c',
             category: 'factorisation',
-            inputType: 'values',
-            format: 'x = ?',
+            inputType: 'coefficients',
             difficulty: 2,
             requiresInteger: true,
-            example: 'Solve x² - 4 = 0'
+            example: 'Roots are x = 2 and x = 3. Find b and c.'
         },
         
         // -------------------------------------------------
-        // INTERMEDIATE QUESTIONS (Sec 3)
+        // INTERMEDIATE (Sec 3) - Symmetry & Turning Point
         // -------------------------------------------------
         
         axis_symmetry_basic: {
@@ -360,7 +365,7 @@ const CONFIG = {
         axis_symmetry: {
             id: 'axis_symmetry',
             name: 'Line of Symmetry',
-            description: 'Find line of symmetry using formula',
+            description: 'Find line of symmetry using x = -b/(2a)',
             category: 'symmetry',
             inputType: 'equation',
             format: 'x = ?',
@@ -382,7 +387,7 @@ const CONFIG = {
         turning_point: {
             id: 'turning_point',
             name: 'Turning Point',
-            description: 'Find the vertex',
+            description: 'Find the vertex coordinates',
             category: 'turning_point',
             inputType: 'coordinate',
             format: '(x, y)',
@@ -402,7 +407,7 @@ const CONFIG = {
         
         discriminant_basic: {
             id: 'discriminant_basic',
-            name: 'Discriminant',
+            name: 'Discriminant (Basic)',
             description: 'Calculate b² - 4ac',
             category: 'roots',
             inputType: 'value',
@@ -411,7 +416,7 @@ const CONFIG = {
         },
         
         // -------------------------------------------------
-        // ADVANCED QUESTIONS (O-Level 4052)
+        // ADVANCED (O-Level 4052)
         // -------------------------------------------------
         
         x_intercepts_quadratic_formula: {
@@ -428,7 +433,7 @@ const CONFIG = {
         discriminant: {
             id: 'discriminant',
             name: 'Discriminant',
-            description: 'Calculate the discriminant',
+            description: 'Calculate and interpret discriminant',
             category: 'roots',
             inputType: 'value',
             difficulty: 3,
@@ -438,7 +443,7 @@ const CONFIG = {
         nature_of_roots: {
             id: 'nature_of_roots',
             name: 'Nature of Roots',
-            description: 'Determine type of roots',
+            description: 'Determine type of roots from discriminant',
             category: 'roots',
             inputType: 'multiple_choice',
             choices: [
@@ -452,10 +457,10 @@ const CONFIG = {
         completing_square: {
             id: 'completing_square',
             name: 'Completing the Square',
-            description: 'Write in vertex form',
+            description: 'Write in vertex form a(x-h)² + k',
             category: 'transformation',
-            inputType: 'equation',
-            format: 'a(x - h)² + k',
+            inputType: 'multiple_values',
+            format: 'a = ?, h = ?, k = ?',
             difficulty: 4,
             requiresInteger: false
         },
@@ -463,7 +468,7 @@ const CONFIG = {
         vertex_form: {
             id: 'vertex_form',
             name: 'Vertex Form',
-            description: 'Identify vertex from completed square',
+            description: 'Find vertex from completed square form',
             category: 'transformation',
             inputType: 'coordinate',
             difficulty: 3,
@@ -473,9 +478,9 @@ const CONFIG = {
         find_coordinates: {
             id: 'find_coordinates',
             name: 'Find Coordinates',
-            description: 'Find points on the curve',
+            description: 'Find y for given x on curve',
             category: 'coordinates',
-            inputType: 'coordinate',
+            inputType: 'value',
             difficulty: 3,
             requiresInteger: false
         },
@@ -494,30 +499,10 @@ const CONFIG = {
         line_intersection: {
             id: 'line_intersection',
             name: 'Line Intersection',
-            description: 'Find intersection with a line',
+            description: 'Find where line meets curve',
             category: 'intersection',
             inputType: 'coordinates',
-            format: '(x₁, y₁), (x₂, y₂)',
-            difficulty: 5,
-            requiresInteger: false
-        },
-        
-        simultaneous_equations: {
-            id: 'simultaneous_equations',
-            name: 'Simultaneous Equations',
-            description: 'Solve with linear equation',
-            category: 'intersection',
-            inputType: 'coordinates',
-            difficulty: 5,
-            requiresInteger: false
-        },
-        
-        tangent_conditions: {
-            id: 'tangent_conditions',
-            name: 'Tangent Conditions',
-            description: 'Find when line is tangent',
-            category: 'advanced',
-            inputType: 'value',
+            format: '(x₁, y₁) and (x₂, y₂)',
             difficulty: 5,
             requiresInteger: false
         }
@@ -684,27 +669,22 @@ const CONFIG = {
         formulas: {
             substitution: {
                 title: 'Substitution',
-                text: 'Replace x with the given value and calculate.',
-                formula: 'y = a(value)² + b(value) + c'
+                text: 'Replace x with the given value and calculate step by step.',
+                formula: 'y = a(x)² + b(x) + c'
             },
             factoring: {
                 title: 'Factorisation',
                 text: 'Find two numbers that multiply to c and add to b.',
                 formula: 'x² + bx + c = (x + p)(x + q) where p×q = c and p+q = b'
             },
-            y_intercept: {
-                title: 'Y-Intercept',
-                text: 'The y-intercept is the constant term c.',
-                formula: 'When x = 0, y = c'
-            },
             axis_symmetry: {
                 title: 'Line of Symmetry',
-                text: 'Use the formula x = -b/(2a)',
-                formula: 'x = -b / (2a)'
+                text: 'Use the formula to find the vertical line through the turning point.',
+                formula: 'x = -b ÷ (2a)'
             },
             turning_point: {
                 title: 'Turning Point',
-                text: 'Find x using -b/(2a), then substitute to find y.',
+                text: 'Find x first using -b/(2a), then substitute to find y.',
                 formula: 'Vertex: (-b/(2a), f(-b/(2a)))'
             },
             quadratic_formula: {
@@ -714,7 +694,7 @@ const CONFIG = {
             },
             discriminant: {
                 title: 'Discriminant',
-                text: 'D = b² - 4ac tells us about the roots.',
+                text: 'Calculate b² - 4ac to determine the nature of roots.',
                 formula: 'D > 0: two roots, D = 0: one root, D < 0: no real roots'
             }
         },
@@ -788,7 +768,7 @@ const CONFIG = {
         speed_demon: {
             id: 'speed_demon',
             name: 'Speed Demon',
-            description: 'Answer in under 5 seconds',
+            description: 'Answer correctly in under 5 seconds',
             icon: '⚡'
         },
         perfectionist: {
@@ -797,11 +777,11 @@ const CONFIG = {
             description: '100% accuracy in a level',
             icon: '💯'
         },
-        level_complete: {
-            id: 'level_complete',
-            name: 'Level Complete',
-            description: 'Complete all questions in a level',
-            icon: '✅'
+        level_master: {
+            id: 'level_master',
+            name: 'Level Master',
+            description: 'Complete all difficulty levels',
+            icon: '👑'
         }
     },
 
@@ -812,7 +792,7 @@ const CONFIG = {
         enabled: false,
         showFPS: false,
         showCoordinates: false,
-        logQuestions: false,
+        logQuestions: true,
         skipAnimations: false,
         unlockAll: false
     }
@@ -863,7 +843,6 @@ const COLORS = {
 };
 
 const CATEGORY_NAMES = {
-    basic: 'Basic Concepts',
     substitution: 'Substitution',
     factorisation: 'Factorisation',
     symmetry: 'Line of Symmetry',
@@ -874,8 +853,7 @@ const CATEGORY_NAMES = {
     roots: 'Roots & Discriminant',
     intersection: 'Intersections',
     coordinates: 'Coordinates',
-    range: 'Range',
-    advanced: 'Advanced'
+    range: 'Range'
 };
 
 // Export
