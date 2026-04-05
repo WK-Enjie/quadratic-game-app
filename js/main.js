@@ -2,6 +2,7 @@
    QUADRATIC CATAPULT QUEST - MAIN ENTRY POINT
    =====================================================
    Application initialization and bootstrapping
+   CORRECTED VERSION - Fixed initialization issues
    ===================================================== */
 
 /**
@@ -14,6 +15,8 @@ class Application {
         this.canvas = null;
         this.ui = null;
         this.isInitialized = false;
+        this.initAttempts = 0;
+        this.maxInitAttempts = 10;
     }
 
     /**
@@ -24,11 +27,11 @@ class Application {
         console.log('📐 Initializing...');
 
         try {
-            // Show loading screen
-            this.showLoadingScreen();
-
             // Wait for DOM to be ready
             await this.waitForDOM();
+            
+            // Small delay to ensure styles are applied
+            await this.sleep(100);
 
             // Initialize components
             await this.initializeComponents();
@@ -37,7 +40,7 @@ class Application {
             this.setupErrorHandling();
 
             // Hide loading screen and show menu
-            await this.hideLoadingScreen();
+            this.hideLoadingScreen();
 
             this.isInitialized = true;
             console.log('✅ Application initialized successfully!');
@@ -50,33 +53,34 @@ class Application {
 
     /**
      * Wait for DOM to be fully loaded
-     * @returns {Promise}
      */
     waitForDOM() {
         return new Promise((resolve) => {
-            if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            if (document.readyState === 'complete') {
                 resolve();
+            } else if (document.readyState === 'interactive') {
+                // DOM is ready but resources might still be loading
+                setTimeout(resolve, 50);
             } else {
-                document.addEventListener('DOMContentLoaded', resolve);
+                window.addEventListener('load', () => resolve());
             }
         });
+    }
+
+    /**
+     * Sleep utility
+     */
+    sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
     }
 
     /**
      * Initialize all game components
      */
     async initializeComponents() {
-        // Initialize Canvas Renderer
-        console.log('🎨 Initializing canvas...');
-        this.canvas = new CanvasRenderer('game-canvas');
-        
-        // Apply initial settings
-        const savedSettings = this.loadSettings();
-        if (savedSettings.gridStyle) {
-            this.canvas.setGridStyle(savedSettings.gridStyle);
-        }
+        console.log('🔧 Initializing components...');
 
-        // Initialize UI Controller
+        // Initialize UI Controller first (doesn't need canvas)
         console.log('🖥️ Initializing UI...');
         this.ui = new UI();
         this.ui.addDynamicStyles();
@@ -84,7 +88,11 @@ class Application {
         // Initialize Game Engine
         console.log('🎮 Initializing game engine...');
         this.game = new Game();
-        
+
+        // Initialize Canvas Renderer
+        console.log('🎨 Initializing canvas...');
+        await this.initializeCanvas();
+
         // Connect components
         this.game.init(this.canvas, this.ui);
         this.ui.init(this.game);
@@ -92,19 +100,51 @@ class Application {
         // Load UI settings
         this.ui.loadSettingsUI();
 
-        // Setup keyboard shortcuts info
+        // Setup keyboard shortcuts
         this.setupKeyboardShortcuts();
-
-        // Preload assets (if any)
-        await this.preloadAssets();
 
         // Check for first-time user
         this.checkFirstTimeUser();
+
+        console.log('✅ All components initialized');
+    }
+
+    /**
+     * Initialize canvas with retry logic
+     */
+    async initializeCanvas() {
+        const canvasElement = document.getElementById('game-canvas');
+        
+        if (!canvasElement) {
+            throw new Error('Canvas element not found');
+        }
+
+        // Create canvas renderer
+        this.canvas = new CanvasRenderer('game-canvas');
+
+        // Wait for canvas to be ready
+        let attempts = 0;
+        while (!this.canvas.isInitialized && attempts < 20) {
+            await this.sleep(100);
+            attempts++;
+        }
+
+        if (!this.canvas.isInitialized) {
+            console.warn('Canvas initialization timeout, forcing init...');
+            this.canvas.initCanvas();
+        }
+
+        // Apply saved settings
+        const savedSettings = this.loadSettings();
+        if (savedSettings.gridStyle) {
+            this.canvas.setGridStyle(savedSettings.gridStyle);
+        }
+
+        console.log('🎨 Canvas ready');
     }
 
     /**
      * Load saved settings
-     * @returns {Object}
      */
     loadSettings() {
         const key = CONFIG.storage.prefix + CONFIG.storage.keys.settings;
@@ -114,6 +154,34 @@ class Application {
         } catch (e) {
             return {};
         }
+    }
+
+    /**
+     * Hide loading screen and show main menu
+     */
+    hideLoadingScreen() {
+        const loadingScreen = document.getElementById('loading-screen');
+        const menuScreen = document.getElementById('main-menu');
+
+        console.log('📺 Transitioning to main menu...');
+
+        if (loadingScreen) {
+            // Fade out effect
+            loadingScreen.style.transition = 'opacity 0.3s ease';
+            loadingScreen.style.opacity = '0';
+
+            setTimeout(() => {
+                loadingScreen.classList.add('hidden');
+                loadingScreen.style.display = 'none';
+            }, 300);
+        }
+
+        if (menuScreen) {
+            menuScreen.classList.add('active');
+            menuScreen.style.display = 'flex';
+        }
+
+        console.log('✅ Main menu visible');
     }
 
     /**
@@ -142,7 +210,7 @@ class Application {
             }
 
             // Debug shortcuts (only in debug mode)
-            if (CONFIG.debug.enabled) {
+            if (CONFIG.debug && CONFIG.debug.enabled) {
                 this.handleDebugShortcuts(e);
             }
         });
@@ -150,7 +218,6 @@ class Application {
 
     /**
      * Handle debug shortcuts
-     * @param {KeyboardEvent} e
      */
     handleDebugShortcuts(e) {
         if (!e.ctrlKey) return;
@@ -182,6 +249,10 @@ class Application {
         CONFIG.debug.enabled = !CONFIG.debug.enabled;
         CONFIG.debug.showCoordinates = CONFIG.debug.enabled;
         console.log(`🐛 Debug mode: ${CONFIG.debug.enabled ? 'ON' : 'OFF'}`);
+        
+        if (this.ui) {
+            this.ui.showToast(`Debug mode: ${CONFIG.debug.enabled ? 'ON' : 'OFF'}`, 'info');
+        }
     }
 
     /**
@@ -211,8 +282,6 @@ class Application {
 
     /**
      * Format correct answer for auto-submit
-     * @param {Question} question
-     * @returns {string}
      */
     formatCorrectAnswerForInput(question) {
         const answer = question.correctAnswer;
@@ -245,25 +314,6 @@ class Application {
     }
 
     /**
-     * Preload game assets
-     * @returns {Promise}
-     */
-    async preloadAssets() {
-        // Placeholder for asset preloading
-        // In a full implementation, this would load images, sounds, etc.
-        
-        console.log('📦 Preloading assets...');
-        
-        // Simulate loading time for smooth UX
-        await this.sleep(500);
-        
-        // Preload any fonts
-        await document.fonts.ready;
-        
-        console.log('✅ Assets loaded');
-    }
-
-    /**
      * Check if this is the user's first time
      */
     checkFirstTimeUser() {
@@ -271,10 +321,9 @@ class Application {
         const tutorialComplete = localStorage.getItem(key);
 
         if (!tutorialComplete && CONFIG.ui.tutorial.showOnFirstPlay) {
-            // Show tutorial on first visit
             setTimeout(() => {
                 this.showWelcomeMessage();
-            }, 500);
+            }, 1000);
         }
     }
 
@@ -282,118 +331,135 @@ class Application {
      * Show welcome message for new users
      */
     showWelcomeMessage() {
-        this.ui.showToast('Welcome to Quadratic Catapult Quest! 🎮', 'info');
-        
-        setTimeout(() => {
-            this.ui.showToast('Click "How to Play" to learn the basics!', 'info');
-        }, 3000);
+        if (this.ui) {
+            this.ui.showToast('Welcome to Quadratic Catapult Quest! 🎮', 'info');
+            
+            setTimeout(() => {
+                this.ui.showToast('Click "How to Play" to learn the basics!', 'info');
+            }, 3000);
+        }
     }
 
     /**
-     * Show help/shortcuts overlay
+     * Show help overlay
      */
     showHelp() {
         const shortcuts = CONFIG.ui.shortcuts;
         
-        const helpContent = `
-            <div class="help-overlay">
-                <div class="help-content">
-                    <h2>⌨️ Keyboard Shortcuts</h2>
-                    <div class="shortcut-list">
-                        <div class="shortcut-item">
-                            <span class="shortcut-key">${shortcuts.launch}</span>
-                            <span class="shortcut-desc">Submit Answer / Launch</span>
-                        </div>
-                        <div class="shortcut-item">
-                            <span class="shortcut-key">${shortcuts.hint.toUpperCase()}</span>
-                            <span class="shortcut-desc">Show Hint</span>
-                        </div>
-                        <div class="shortcut-item">
-                            <span class="shortcut-key">${shortcuts.pause}</span>
-                            <span class="shortcut-desc">Pause Game</span>
-                        </div>
-                        <div class="shortcut-item">
-                            <span class="shortcut-key">${shortcuts.formulaPanel.toUpperCase()}</span>
-                            <span class="shortcut-desc">Toggle Formula Reference</span>
-                        </div>
-                        <div class="shortcut-item">
-                            <span class="shortcut-key">F1</span>
-                            <span class="shortcut-desc">Show This Help</span>
-                        </div>
+        // Remove existing help if present
+        const existingHelp = document.querySelector('.help-overlay');
+        if (existingHelp) {
+            existingHelp.remove();
+            return;
+        }
+        
+        const helpEl = document.createElement('div');
+        helpEl.className = 'help-overlay';
+        helpEl.innerHTML = `
+            <div class="help-content">
+                <h2>⌨️ Keyboard Shortcuts</h2>
+                <div class="shortcut-list">
+                    <div class="shortcut-item">
+                        <span class="shortcut-key">Enter</span>
+                        <span class="shortcut-desc">Submit Answer / Launch</span>
                     </div>
-                    <button class="btn btn-primary" onclick="this.parentElement.parentElement.remove()">
-                        Got it!
-                    </button>
+                    <div class="shortcut-item">
+                        <span class="shortcut-key">H</span>
+                        <span class="shortcut-desc">Show Hint</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-key">Esc</span>
+                        <span class="shortcut-desc">Pause Game</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-key">F</span>
+                        <span class="shortcut-desc">Toggle Formula Reference</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-key">F1</span>
+                        <span class="shortcut-desc">Show/Hide This Help</span>
+                    </div>
                 </div>
+                <button class="btn btn-primary" id="help-close-btn">Got it!</button>
             </div>
         `;
-
-        const helpEl = document.createElement('div');
-        helpEl.innerHTML = helpContent;
-        helpEl.querySelector('.help-overlay').addEventListener('click', (e) => {
-            if (e.target.classList.contains('help-overlay')) {
+        
+        document.body.appendChild(helpEl);
+        
+        // Close handlers
+        helpEl.addEventListener('click', (e) => {
+            if (e.target === helpEl || e.target.id === 'help-close-btn') {
                 helpEl.remove();
             }
         });
-        
-        document.body.appendChild(helpEl);
 
-        // Add styles
-        const style = document.createElement('style');
-        style.textContent = `
-            .help-overlay {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0, 0, 0, 0.8);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                z-index: 3000;
-                animation: fadeIn 0.3s ease;
-            }
-            
-            .help-content {
-                background: linear-gradient(135deg, #16213e, #1a1a2e);
-                padding: 30px 40px;
-                border-radius: 16px;
-                text-align: center;
-                max-width: 400px;
-                border: 1px solid rgba(255, 255, 255, 0.1);
-            }
-            
-            .help-content h2 {
-                margin-bottom: 20px;
-                color: #6C63FF;
-            }
-            
-            .shortcut-list {
-                text-align: left;
-                margin-bottom: 20px;
-            }
-            
-            .shortcut-item {
-                display: flex;
-                justify-content: space-between;
-                padding: 10px 0;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            }
-            
-            .shortcut-key {
-                background: rgba(108, 99, 255, 0.3);
-                padding: 4px 12px;
-                border-radius: 4px;
-                font-family: monospace;
-                font-weight: bold;
-            }
-            
-            .shortcut-desc {
-                color: #b8b8d1;
-            }
-        `;
-        document.head.appendChild(style);
+        // Add styles if not present
+        if (!document.getElementById('help-styles')) {
+            const style = document.createElement('style');
+            style.id = 'help-styles';
+            style.textContent = `
+                .help-overlay {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.85);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 10000;
+                    animation: fadeIn 0.2s ease;
+                }
+                
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                
+                .help-content {
+                    background: linear-gradient(135deg, #16213e, #1a1a2e);
+                    padding: 30px 40px;
+                    border-radius: 16px;
+                    text-align: center;
+                    max-width: 400px;
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+                }
+                
+                .help-content h2 {
+                    margin-bottom: 20px;
+                    color: #6C63FF;
+                }
+                
+                .shortcut-list {
+                    text-align: left;
+                    margin-bottom: 20px;
+                }
+                
+                .shortcut-item {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 10px 0;
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                }
+                
+                .shortcut-key {
+                    background: rgba(108, 99, 255, 0.3);
+                    padding: 4px 12px;
+                    border-radius: 4px;
+                    font-family: monospace;
+                    font-weight: bold;
+                    color: #fff;
+                }
+                
+                .shortcut-desc {
+                    color: #b8b8d1;
+                }
+            `;
+            document.head.appendChild(style);
+        }
     }
 
     /**
@@ -402,81 +468,23 @@ class Application {
     setupErrorHandling() {
         window.onerror = (message, source, lineno, colno, error) => {
             console.error('Global error:', { message, source, lineno, colno, error });
-            
-            // Don't show error UI for minor issues
-            if (CONFIG.debug.enabled) {
-                this.ui?.showToast(`Error: ${message}`, 'error');
-            }
-            
             return false;
         };
 
         window.onunhandledrejection = (event) => {
             console.error('Unhandled promise rejection:', event.reason);
-            
-            if (CONFIG.debug.enabled) {
-                this.ui?.showToast('An error occurred', 'error');
-            }
         };
     }
 
     /**
-     * Show loading screen
-     */
-    showLoadingScreen() {
-        const loadingScreen = document.getElementById('loading-screen');
-        if (loadingScreen) {
-            loadingScreen.classList.add('active');
-        }
-    }
-
-    /**
-     * Hide loading screen
-     * @returns {Promise}
-     */
-    async hideLoadingScreen() {
-        const loadingScreen = document.getElementById('loading-screen');
-        const menuScreen = document.getElementById('main-menu');
-        
-        if (loadingScreen && menuScreen) {
-            // Fade out loading screen
-            loadingScreen.style.opacity = '0';
-            
-            await this.sleep(300);
-            
-            loadingScreen.classList.remove('active');
-            loadingScreen.style.opacity = '';
-            
-            // Show menu
-            menuScreen.classList.add('active');
-        }
-    }
-
-    /**
      * Show error screen
-     * @param {Error} error
      */
     showErrorScreen(error) {
         const app = document.getElementById('app');
         
         if (app) {
             app.innerHTML = `
-                <div class="error-screen">
-                    <h1>😵 Oops!</h1>
-                    <p>Something went wrong while loading the game.</p>
-                    <div class="error-details">
-                        <code>${error.message}</code>
-                    </div>
-                    <button class="btn btn-primary" onclick="location.reload()">
-                        Try Again
-                    </button>
-                </div>
-            `;
-
-            // Add error screen styles
-            const style = document.createElement('style');
-            style.textContent = `
-                .error-screen {
+                <div style="
                     display: flex;
                     flex-direction: column;
                     align-items: center;
@@ -485,48 +493,42 @@ class Application {
                     padding: 20px;
                     text-align: center;
                     background: linear-gradient(135deg, #1a1a2e, #16213e);
-                }
-                
-                .error-screen h1 {
-                    font-size: 3rem;
-                    margin-bottom: 10px;
-                }
-                
-                .error-screen p {
-                    color: #b8b8d1;
-                    margin-bottom: 20px;
-                }
-                
-                .error-details {
-                    background: rgba(255, 71, 87, 0.2);
-                    border: 1px solid #ff4757;
-                    padding: 15px 25px;
-                    border-radius: 8px;
-                    margin-bottom: 20px;
-                    max-width: 500px;
-                }
-                
-                .error-details code {
-                    color: #ff6b6b;
-                    font-family: monospace;
-                }
+                    color: white;
+                    font-family: 'Poppins', sans-serif;
+                ">
+                    <h1 style="font-size: 3rem; margin-bottom: 10px;">😵 Oops!</h1>
+                    <p style="color: #b8b8d1; margin-bottom: 20px;">
+                        Something went wrong while loading the game.
+                    </p>
+                    <div style="
+                        background: rgba(255, 71, 87, 0.2);
+                        border: 1px solid #ff4757;
+                        padding: 15px 25px;
+                        border-radius: 8px;
+                        margin-bottom: 20px;
+                        max-width: 500px;
+                    ">
+                        <code style="color: #ff6b6b;">${error.message}</code>
+                    </div>
+                    <button onclick="location.reload()" style="
+                        background: linear-gradient(135deg, #6C63FF, #5a52d5);
+                        color: white;
+                        border: none;
+                        padding: 12px 30px;
+                        border-radius: 8px;
+                        font-size: 16px;
+                        cursor: pointer;
+                        font-family: 'Poppins', sans-serif;
+                    ">
+                        🔄 Try Again
+                    </button>
+                </div>
             `;
-            document.head.appendChild(style);
         }
     }
 
     /**
-     * Sleep utility
-     * @param {number} ms - Milliseconds to sleep
-     * @returns {Promise}
-     */
-    sleep(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    /**
      * Get application info
-     * @returns {Object}
      */
     getInfo() {
         return {
@@ -534,7 +536,7 @@ class Application {
             version: CONFIG.game.version,
             initialized: this.isInitialized,
             state: this.game?.state,
-            debug: CONFIG.debug.enabled
+            debug: CONFIG.debug?.enabled
         };
     }
 }
@@ -544,23 +546,17 @@ class Application {
 // =====================================================
 
 /**
- * Format number for display (global helper)
- * @param {number} num
- * @param {number} decimals
- * @returns {string}
+ * Format number for display
  */
 function formatNumber(num, decimals = 2) {
     if (Number.isInteger(num)) {
         return num.toString();
     }
-    return num.toFixed(decimals).replace(/\.?0+$/, '');
+    return parseFloat(num.toFixed(decimals)).toString();
 }
 
 /**
  * Generate random integer between min and max (inclusive)
- * @param {number} min
- * @param {number} max
- * @returns {number}
  */
 function randomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -568,8 +564,6 @@ function randomInt(min, max) {
 
 /**
  * Shuffle an array (Fisher-Yates)
- * @param {Array} array
- * @returns {Array}
  */
 function shuffleArray(array) {
     const shuffled = [...array];
@@ -582,10 +576,6 @@ function shuffleArray(array) {
 
 /**
  * Clamp a value between min and max
- * @param {number} value
- * @param {number} min
- * @param {number} max
- * @returns {number}
  */
 function clamp(value, min, max) {
     return Math.min(Math.max(value, min), max);
@@ -593,10 +583,6 @@ function clamp(value, min, max) {
 
 /**
  * Linear interpolation
- * @param {number} a - Start value
- * @param {number} b - End value
- * @param {number} t - Progress (0-1)
- * @returns {number}
  */
 function lerp(a, b, t) {
     return a + (b - a) * t;
@@ -604,7 +590,6 @@ function lerp(a, b, t) {
 
 /**
  * Check if device is mobile
- * @returns {boolean}
  */
 function isMobile() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -612,7 +597,6 @@ function isMobile() {
 
 /**
  * Check if device supports touch
- * @returns {boolean}
  */
 function isTouchDevice() {
     return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
@@ -620,9 +604,6 @@ function isTouchDevice() {
 
 /**
  * Debounce function
- * @param {Function} func
- * @param {number} wait
- * @returns {Function}
  */
 function debounce(func, wait) {
     let timeout;
@@ -638,9 +619,6 @@ function debounce(func, wait) {
 
 /**
  * Throttle function
- * @param {Function} func
- * @param {number} limit
- * @returns {Function}
  */
 function throttle(func, limit) {
     let inThrottle;
@@ -657,7 +635,7 @@ function throttle(func, limit) {
 // POLYFILLS
 // =====================================================
 
-// Array.prototype.at polyfill (for older browsers)
+// Array.prototype.at polyfill
 if (!Array.prototype.at) {
     Array.prototype.at = function(index) {
         const length = this.length;
@@ -680,124 +658,188 @@ if (!Object.hasOwn) {
 // Create global application instance
 const app = new Application();
 
-// Initialize when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => app.init());
-} else {
-    app.init();
+// Initialize when ready
+function startApp() {
+    app.init().catch(error => {
+        console.error('Failed to start application:', error);
+    });
 }
 
-// Expose to global scope for debugging
+// Multiple initialization triggers for reliability
+if (document.readyState === 'complete') {
+    startApp();
+} else if (document.readyState === 'interactive') {
+    setTimeout(startApp, 50);
+} else {
+    document.addEventListener('DOMContentLoaded', startApp);
+    window.addEventListener('load', () => {
+        if (!app.isInitialized) {
+            startApp();
+        }
+    });
+}
+
+// =====================================================
+// GLOBAL API FOR DEBUGGING
+// =====================================================
+
 window.QuadraticQuest = {
     app,
     get game() { return app.game; },
     get canvas() { return app.canvas; },
     get ui() { return app.ui; },
-    CONFIG,
-    COLORS,
-    EASING,
+    get CONFIG() { return CONFIG; },
+    get COLORS() { return COLORS; },
+    get EASING() { return EASING; },
     
     // Debug utilities
     debug: {
-        enable: () => { CONFIG.debug.enabled = true; },
-        disable: () => { CONFIG.debug.enabled = false; },
-        showCoords: () => { CONFIG.debug.showCoordinates = true; },
-        hideCoords: () => { CONFIG.debug.showCoordinates = false; },
+        enable: () => { 
+            CONFIG.debug.enabled = true;
+            CONFIG.debug.showCoordinates = true;
+            console.log('🐛 Debug mode enabled');
+        },
+        disable: () => { 
+            CONFIG.debug.enabled = false;
+            CONFIG.debug.showCoordinates = false;
+            console.log('🐛 Debug mode disabled');
+        },
         unlockAll: () => { 
             CONFIG.debug.unlockAll = true;
-            location.reload();
+            console.log('🔓 All levels unlocked (refresh to apply)');
         },
         resetAll: () => {
-            const prefix = CONFIG.storage.prefix;
-            Object.values(CONFIG.storage.keys).forEach(key => {
-                localStorage.removeItem(prefix + key);
-            });
-            location.reload();
+            if (confirm('Reset all game data?')) {
+                const prefix = CONFIG.storage.prefix;
+                Object.values(CONFIG.storage.keys).forEach(key => {
+                    localStorage.removeItem(prefix + key);
+                });
+                location.reload();
+            }
         },
-        getStats: () => app.game?.statistics,
-        getSession: () => app.game?.session?.getSummary()
+        getStats: () => {
+            console.log('📊 Statistics:', app.game?.statistics);
+            return app.game?.statistics;
+        },
+        getSession: () => {
+            console.log('🎮 Session:', app.game?.session?.getSummary());
+            return app.game?.session?.getSummary();
+        }
     },
 
     // Quick test functions
     test: {
-        // Generate and log a random quadratic
-        quadratic: () => {
-            const q = QuadraticGenerator.generate(CONFIG.difficulty.intermediate);
-            console.log('Quadratic:', q.getEquation());
-            console.log('Vertex:', q.getTurningPoint());
-            console.log('X-intercepts:', q.getXIntercepts());
-            console.log('Discriminant:', q.getDiscriminant());
+        quadratic: (a = 1, b = -4, c = 3) => {
+            const q = new Quadratic(a, b, c);
+            console.log('📐 Quadratic:', q.getEquation());
+            console.log('   Vertex:', q.getTurningPoint());
+            console.log('   X-intercepts:', q.getXIntercepts());
+            console.log('   Y-intercept:', q.getYIntercept());
+            console.log('   Discriminant:', q.getDiscriminant());
+            console.log('   Line of symmetry:', q.getLineOfSymmetry());
             return q;
         },
         
-        // Generate and log a question
+        randomQuadratic: () => {
+            const q = QuadraticGenerator.generate(CONFIG.difficulty.intermediate);
+            console.log('🎲 Random Quadratic:', q.getEquation());
+            console.log('   Vertex:', q.getTurningPoint());
+            console.log('   X-intercepts:', q.getXIntercepts());
+            return q;
+        },
+        
         question: (type = 'turning_point', difficulty = 'intermediate') => {
             const q = QuadraticGenerator.generateForQuestionType(type, difficulty);
             const question = QuestionGenerator.generateByType(type, q, difficulty);
-            console.log('Question:', question.questionText);
-            console.log('Equation:', question.equationDisplay);
-            console.log('Answer:', question.correctAnswer);
-            console.log('Hints:', question.hints);
+            console.log('❓ Question:', question.questionText);
+            console.log('   Equation:', question.equationDisplay);
+            console.log('   Answer:', question.correctAnswer);
+            console.log('   Hints:', question.hints.map(h => h.text));
             return question;
         },
         
-        // Test answer validation
         validate: (answer, correctAnswer, type) => {
             const result = AnswerValidator.validate(answer, correctAnswer, type);
-            console.log('Validation result:', result);
+            console.log('✅ Validation result:', result);
             return result;
         },
         
-        // Quick start a game
         startGame: (difficulty = 'beginner') => {
-            app.game?.startGame(difficulty);
+            if (app.game) {
+                app.game.startGame(difficulty);
+                console.log(`🚀 Started ${difficulty} game`);
+            }
         },
         
-        // Quick start practice
         startPractice: (difficulty = 'beginner', topic = null) => {
-            app.game?.startPractice(difficulty, topic);
+            if (app.game) {
+                app.game.startPractice(difficulty, topic);
+                console.log(`📚 Started practice mode: ${difficulty}`);
+            }
+        },
+        
+        drawQuadratic: (a = 1, b = -4, c = 3) => {
+            const q = new Quadratic(a, b, c);
+            if (app.canvas) {
+                app.canvas.fitToQuadratic(q);
+                app.canvas.render({
+                    quadratic: q,
+                    curveProgress: 1,
+                    showKeyPoints: true,
+                    highlightedPoints: ['vertex', 'xIntercepts', 'yIntercept'],
+                    showCatapult: true,
+                    target: q.getTurningPoint()
+                });
+                console.log('🎨 Drew quadratic:', q.getEquation());
+            }
+            return q;
+        },
+        
+        animateCurve: (a = 1, b = -4, c = 3) => {
+            const q = new Quadratic(a, b, c);
+            if (app.canvas) {
+                app.canvas.fitToQuadratic(q);
+                app.canvas.animateCurve(q, () => {
+                    console.log('✨ Animation complete');
+                });
+            }
+            return q;
+        }
+    },
+    
+    // Force reinitialize canvas (useful after DOM changes)
+    reinitCanvas: () => {
+        if (app.canvas) {
+            app.canvas.forceResize();
+            console.log('🎨 Canvas reinitialized');
         }
     }
 };
 
-// Log ready message
+// =====================================================
+// CONSOLE WELCOME MESSAGE
+// =====================================================
+
 console.log(`
-╔═══════════════════════════════════════════════════════════╗
+%c╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
 ║   📐 QUADRATIC CATAPULT QUEST 🎯                          ║
 ║                                                           ║
 ║   Version: ${CONFIG.game.version}                                      ║
 ║   Ready to play!                                          ║
 ║                                                           ║
-║   Open console and type:                                  ║
-║   • QuadraticQuest.test.quadratic() - Test math          ║
-║   • QuadraticQuest.test.question() - Test questions      ║
-║   • QuadraticQuest.debug.enable() - Enable debug mode    ║
+║   Console Commands:                                       ║
+║   • QuadraticQuest.test.quadratic()    - Test math       ║
+║   • QuadraticQuest.test.drawQuadratic() - Draw curve     ║
+║   • QuadraticQuest.test.question()     - Generate Q      ║
+║   • QuadraticQuest.test.startGame()    - Quick start     ║
+║   • QuadraticQuest.debug.enable()      - Debug mode      ║
 ║                                                           ║
 ╚═══════════════════════════════════════════════════════════╝
-`);
+`, 'color: #6C63FF; font-family: monospace;');
 
 // =====================================================
-// SERVICE WORKER (Optional - for offline support)
-// =====================================================
-
-// Register service worker for offline capability (uncomment if needed)
-/*
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-            .then(registration => {
-                console.log('ServiceWorker registered:', registration.scope);
-            })
-            .catch(error => {
-                console.log('ServiceWorker registration failed:', error);
-            });
-    });
-}
-*/
-
-// =====================================================
-// EXPORT FOR MODULES
+// EXPORT
 // =====================================================
 
 if (typeof module !== 'undefined' && module.exports) {
